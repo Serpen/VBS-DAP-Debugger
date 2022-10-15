@@ -7,9 +7,12 @@
 
     static void Main(string[] args)
     {
+        System.Console.WriteLine("x");
         if (args.Length == 0)
             args = new String[] { ".\\Sample.vbs" };
 
+        VbsDebuggerBase.GetScriptProcesses();
+        return;
         vbsbase = new VbsDebuggerBase();
 
         var thread = new Thread(new ParameterizedThreadStart(Go));

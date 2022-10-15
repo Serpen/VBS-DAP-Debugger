@@ -22,7 +22,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
         public int GetDocVersionString(out string version)
         {
             version = new Version().ToString();
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.GetDocVersionString " + version);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.GetDocVersionString " + version);
             return 0;
         }
 
@@ -31,7 +31,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
         const uint TYPE_E_ELEMENTNOTFOUND = 0x8002802B;
         public uint GetItemInfo(string pstrName, uint dwReturnMask, out object ppiunkItem, IntPtr ppti)
         {
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.GetItemInfo {0} {1}", pstrName, dwReturnMask);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.GetItemInfo {0} {1}", pstrName, dwReturnMask);
             if (NamedItems.TryGetValue(pstrName, out var item))
             {
                 ppiunkItem = item;
@@ -47,37 +47,37 @@ using Microsoft.VisualStudio.Debugger.Interop;
         public int GetLCID(out uint lcid)
         {
             lcid = (uint)System.Globalization.CultureInfo.CurrentUICulture.LCID;
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.GetLCID " + lcid);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.GetLCID " + lcid);
             return 0;
         }
 
         public int OnEnterScript()
         {
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.OnEnterScript");
+            System.Diagnostics.Debug.WriteLine("ScriptSite.OnEnterScript");
             return 0;
         }
 
         public int OnLeaveScript()
         {
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.OnLeaveScript");
+            System.Diagnostics.Debug.WriteLine("ScriptSite.OnLeaveScript");
             return 0;
         }
 
         public int OnScriptError(IActiveScriptError scriptError)
         {
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.OnScriptError {0}", scriptError);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.OnScriptError {0}", scriptError);
             return 0;
         }
 
         public int OnScriptTerminate(ref object result, stdole.EXCEPINFO[] exceptionInfo)
         {
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.OnScriptTerminate {0}", result);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.OnScriptTerminate {0}", result);
             return 0;
         }
 
         public int OnStateChange(SCRIPTSTATE scriptState)
         {
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.OnStateChange {0}", scriptState);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.OnStateChange {0}", scriptState);
             return 0;
         }
 
@@ -88,7 +88,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
 
 #endif
         {
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.GetDocumentContextFromPosition {0}, {1} {2}", dwSourceContext, uCharacterOffset, uNumChars);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.GetDocumentContextFromPosition {0}, {1} {2}", dwSourceContext, uCharacterOffset, uNumChars);
             throw new NotImplementedException();
         }
 
@@ -106,7 +106,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
         public int GetRootApplicationNode(out IDebugApplicationNode ppdanRoot)
         {
             m_debugApplication.GetRootNode(out ppdanRoot);
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.GetRootApplicationNode {0}", ppdanRoot);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.GetRootApplicationNode {0}", ppdanRoot);
             return 0x8004001;
         }
 
@@ -114,20 +114,20 @@ using Microsoft.VisualStudio.Debugger.Interop;
         {
             pfEnterDebugger = 0;
             pfCallOnScriptErrorWhenContinuing = 1;
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.OnScriptErrorDebug {0}", pErrorDebug);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.OnScriptErrorDebug {0}", pErrorDebug);
             return 0;
         }
 
         public int GetWindow(out IntPtr phwnd)
         {
             phwnd = IntPtr.Zero;
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.GetWindow {0}", phwnd);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.GetWindow {0}", phwnd);
             return 0;
         }
 
         public int EnableModeless(int fEnable)
         {
-            System.Diagnostics.Debug.WriteLine("MyScriptSite.EnableModeless {0}", fEnable);
+            System.Diagnostics.Debug.WriteLine("ScriptSite.EnableModeless {0}", fEnable);
             return 0;
         }
 
