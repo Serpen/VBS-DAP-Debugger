@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using ActiveDbg;
 using static Helpers;
 using Marshal = System.Runtime.InteropServices.Marshal;
+using stdole;
 
 public class VbsDebuggerBase : IDisposable
 {
@@ -10,7 +11,7 @@ public class VbsDebuggerBase : IDisposable
 
     internal IDebugApplication64 debugApplication;
 #else
-    static internal IProcessDebugManager32? pdm;
+    static internal IProcessDebugManager32 pdm;
     internal IDebugApplication32 debugApplication;
 #endif
 
@@ -22,16 +23,24 @@ public class VbsDebuggerBase : IDisposable
     readonly static Type PDMtype = Type.GetTypeFromProgID("ProcessDebugManager") ?? throw new Exception("no def ProcessDebugManager");
     readonly static Type VBScriptType = System.Type.GetTypeFromProgID("VBScript") ?? throw new Exception("no def VBScript");
     static readonly Type MSProgramProvider2Type = Type.GetTypeFromCLSID(new Guid("{170EC3FC-4E80-40AB-A85A-55900C7C70DE}")) ?? throw new Exception("no pdm2type");
-    static readonly Guid ScriptEngineFilter = new Guid("{F200A7E7-DEA5-11D0-B854-00A0244A1DE2}");
+
+    static readonly CONST_GUID_ARRAY ScriptEngineFilter;
 
     static VbsDebuggerBase()
     {
 #if ARCH64
         pdm = Activator.CreateInstance(PDMtype) as IProcessDebugManager64 ?? throw new Exception($"no {nameof(IProcessDebugManager64)}");
 #else
-        pdm = Activator.CreateInstance(PDMtype) as IProcessDebugManager32 ?? throw new Exception($"no {nameof(IProcessDebugManager32)}");
+        //pdm = Activator.CreateInstance(PDMtype) as IProcessDebugManager32 ?? throw new Exception($"no {nameof(IProcessDebugManager32)}");
 #endif
         languageEngine = Activator.CreateInstance(VBScriptType) as IActiveScriptMy ?? throw new Exception($"no {nameof(IActiveScriptMy)}");
+
+        var sefPtr = Marshal.AllocHGlobal((Marshal.SizeOf<Guid>()));
+
+        Guid sefguid = new Guid("{F200A7E7-DEA5-11D0-B854-00A0244A1DE2}");
+        Marshal.StructureToPtr(sefguid, sefPtr, false);
+
+        ScriptEngineFilter = new CONST_GUID_ARRAY() { dwCount = 1, Members = sefPtr };
     }
     public VbsDebuggerBase()
     {
@@ -116,44 +125,67 @@ public class VbsDebuggerBase : IDisposable
         SUCCESS(languageEngine.Close());
     }
 
-    /*
-        Not working, signature wrong?
-    */
     internal static IEnumerable<System.Diagnostics.Process> GetScriptProcesses()
     {
         var outlist = new List<System.Diagnostics.Process>();
-        var pdm2_ = Activator.CreateInstance(MSProgramProvider2Type) ?? throw new Exception("no pdm2_");
-        var pdm2 = pdm2_ as IDebugProgramProvider2My ?? throw new Exception("no IDebugProgramProvider2"); ;
+        var pdm2 = Activator.CreateInstance(MSProgramProvider2Type) as IDebugProgramProvider2My ?? throw new Exception("no IDebugProgramProvider2");
 
-        var septr = Marshal.AllocHGlobal((Marshal.SizeOf<Guid>()));
-
-        Marshal.StructureToPtr(ScriptEngineFilter, septr, false);
-
-        CONST_GUID_ARRAY sef = new CONST_GUID_ARRAY() { dwCount = 1, Members = septr }; // };
-
-        foreach (var proc in System.Diagnostics.Process.GetProcessesByName("iexplore"))
+        foreach (var proc in System.Diagnostics.Process.GetProcesses())
+        // foreach (var proc in System.Diagnostics.Process.GetProcessesByName("iexplore"))
         {
-            var provdata = new PROVIDER_PROCESS_DATA();
-            System.Console.WriteLine("process {0} ...", proc);
+            System.Diagnostics.Debug.WriteLine("process {0} {1}...", proc, proc.Id);
 
-            var adprocid = new AD_PROCESS_IDMy() { dwProcessId = (uint)proc.Id, ProcessIdType = (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM };
+            var adprocid = new AD_PROCESS_ID() { dwProcessId = (uint)proc.Id, ProcessIdType = (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM };
 
-            // try
-            // {
-                SUCCESS(pdm2.GetProviderProcessData((enum_PROVIDER_FLAGS.PFLAG_GET_PROGRAM_NODES),
-                    null,
-                    adprocid,
-                    sef,
-                    out provdata));
+            int result = 1;
+            try
+            {
+                result = pdm2.GetProviderProcessData((enum_PROVIDER_FLAGS.PFLAG_GET_PROGRAM_NODES), null, adprocid, ScriptEngineFilter, out var provdata);
 
-                // System.Console.WriteLine("process {0} contains script code", proc);
-            // }
-            // catch { }
-            if (provdata.ProgramNodes.dwCount > 0)
-                outlist.Add(proc);
+                SUCCESS(result);
+
+                if (result == 0 && provdata.ProgramNodes.dwCount > 0)
+                    outlist.Add(proc);
+            }
+            catch { }
         }
-        System.Console.WriteLine("end");
         return outlist;
+    }
+
+
+    // not working
+    internal static void Attach(System.Diagnostics.Process proc)
+    {
+        var outlist = new List<System.Diagnostics.Process>();
+        var pdm2 = Activator.CreateInstance(MSProgramProvider2Type) as IDebugProgramProvider2My ?? throw new Exception("no IDebugProgramProvider2");
+
+        System.Diagnostics.Debug.WriteLine("process {0} {1}...", proc, proc.Id);
+
+        var adprocid = new AD_PROCESS_ID() { dwProcessId = (uint)proc.Id, ProcessIdType = (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM };
+
+        int result = 1;
+        try
+        {
+            result = pdm2.GetProviderProcessData(enum_PROVIDER_FLAGS.PFLAG_GET_PROGRAM_NODES | enum_PROVIDER_FLAGS.PFLAG_DEBUGGEE | enum_PROVIDER_FLAGS.PFLAG_ATTACHED_TO_DEBUGGEE, null, adprocid, ScriptEngineFilter, out var provdata);
+
+            SUCCESS(result);
+
+            var dpn2Guid = new Guid("426E255C-F1CE-4D02-A931-F9A254BF7F0F");
+
+            Marshal.QueryInterface(provdata.ProgramNodes.Members, ref dpn2Guid, out var ptr1);
+
+            var dpn2_ = Marshal.GetObjectForIUnknown(ptr1);
+            var dpn2 = dpn2_ as IDebugProgramNode2;
+            var dppn2 = dpn2 as IDebugProviderProgramNode2;
+
+            var rdaGuid = new Guid("51973C30-CB0C-11D0-B5C9-00A0244A0E7A");
+            dppn2.UnmarshalDebuggeeInterface(ref rdaGuid, out var ptr2);
+
+            var rda = Marshal.GetObjectForIUnknown(ptr2) as IRemoteDebugApplication;
+
+            //  dpn2 = provdata.ProgramNodes.Members as IDebugProgramNode2;
+        }
+        catch { }
     }
 
     internal void Wait(System.Diagnostics.Process proc)
@@ -161,7 +193,7 @@ public class VbsDebuggerBase : IDisposable
         var pdm2_ = Activator.CreateInstance(MSProgramProvider2Type) ?? throw new Exception("no pdm2_");
         var pdm2 = pdm2_ as ActiveDbg.IDebugProgramProvider2My ?? throw new Exception("no IDebugProgramProvider2"); ;
 
-        var adprocid = new ActiveDbg.AD_PROCESS_IDMy() { dwProcessId = (uint)proc.Id, ProcessIdType = (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM };
+        var adprocid = new AD_PROCESS_ID() { dwProcessId = (uint)proc.Id, ProcessIdType = (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM };
 
         var septr = Marshal.AllocHGlobal((Marshal.SizeOf<Guid>()));
         Marshal.StructureToPtr(ScriptEngineFilter, septr, false);

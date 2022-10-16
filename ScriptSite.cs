@@ -1,4 +1,5 @@
 // using ActiveDbg;
+using ActiveDbg;
 using Microsoft.VisualStudio.Debugger.Interop;
 
 #if ARCH64
@@ -6,9 +7,9 @@ using Microsoft.VisualStudio.Debugger.Interop;
     {
         public ScriptSite(IDebugApplication64 debugApplication)
 #else
-    class CMyScriptSite : IActiveScriptSite, IActiveScriptSiteDebug32, IActiveScriptSiteWindow
+    class ScriptSite : IActiveScriptSiteMy, IActiveScriptSiteDebug32, IActiveScriptSiteWindow
     {
-    public CMyScriptSite(IDebugApplication32 debugApplication)
+    public ScriptSite(IDebugApplication32 debugApplication)
 #endif
         {
             m_debugApplication = debugApplication;

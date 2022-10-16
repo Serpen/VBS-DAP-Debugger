@@ -11,7 +11,9 @@
         if (args.Length == 0)
             args = new String[] { ".\\Sample.vbs" };
 
-        VbsDebuggerBase.GetScriptProcesses();
+        foreach (var proc in VbsDebuggerBase.GetScriptProcesses())
+            VbsDebuggerBase.Attach(proc);
+        
         return;
         vbsbase = new VbsDebuggerBase();
 
