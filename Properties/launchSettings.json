@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "VBS-DAP-Debugger": {
+      "commandName": "Project",
+      "nativeDebugging": true,
+      "hotReloadEnabled": false
+    }
+  }
+}

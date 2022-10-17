@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ActiveDbg
+﻿namespace ActiveDbg
 {
     [Flags]
     public enum enum_DBGPROP_ATTRIB_FLAGS : uint
@@ -59,9 +57,9 @@ namespace ActiveDbg
         IS_INTERFACE = 0x80000000
     }
 
-        [Flags]
-        public enum enum_DEBUGPROP_INFO_FLAGS : uint
-        {
+    [Flags]
+    public enum enum_DEBUGPROP_INFO_FLAGS : uint
+    {
         //DEBUGPROP_INFO_FULLNAME = 0x1u,
         //DEBUGPROP_INFO_NAME = 0x2u,
         //DEBUGPROP_INFO_TYPE = 0x4u,
@@ -83,60 +81,66 @@ namespace ActiveDbg
         PROP_INFO_ATTRIBUTES = 0x8,
         PROP_INFO_DEBUGPROP = 0x10,
         PROP_INFO_AUTOEXPAND = 0x8000000,
-        PROP_INFO_STANDARD =	( ( ( ( PROP_INFO_NAME | PROP_INFO_TYPE )  | PROP_INFO_VALUE )  | PROP_INFO_ATTRIBUTES )  )
+        PROP_INFO_STANDARD = ((((PROP_INFO_NAME | PROP_INFO_TYPE) | PROP_INFO_VALUE) | PROP_INFO_ATTRIBUTES))
     }
-	
 
-// https://admhelp.microfocus.com/uft/en/all/VBScript/Content/html/a7c6317d-948f-4bb3-b169-1bbe5b7c7cc5.htm
-  [Flags]
-  public enum ScriptItem : uint
-  {
-    None = 0,
-    IsVisible = 2,
-    IsSource = 4,
-    GlobalMembers = 8,
-    IsPersistent = 64, // 0x00000040
-    CodeOnly = 512, // 0x00000200
-    NoCode = 1024, // 0x00000400
-  }
 
-internal static class EnumPropertyTypes
-{
-    internal static readonly Guid IDebugPropertyEnumType_All =              new Guid("51973C55-CB0C-11D0-B5C9-00A0244A0E7A");
-    internal static readonly Guid IDebugPropertyEnumType_Locals =           new Guid("51973C56-CB0C-11D0-B5C9-00A0244A0E7A");
-    internal static readonly Guid IDebugPropertyEnumType_Arguments =        new Guid("51973C57-CB0C-11D0-B5C9-00A0244A0E7A");
-    internal static readonly Guid IDebugPropertyEnumType_LocalsPlusArgs =   new Guid("51973C58-CB0C-11D0-B5C9-00A0244A0E7A");
-    internal static readonly Guid IDebugPropertyEnumType_Registers =        new Guid("51973C59-CB0C-11D0-B5C9-00A0244A0E7A");
-}
+    // https://admhelp.microfocus.com/uft/en/all/VBScript/Content/html/a7c6317d-948f-4bb3-b169-1bbe5b7c7cc5.htm
+    [Flags]
+    internal enum ScriptItem : uint
+    {
+        None = 0,
+        IsVisible = 2,
+        IsSource = 4,
+        GlobalMembers = 8,
+        IsPersistent = 64, // 0x00000040
+        CodeOnly = 512, // 0x00000200
+        NoCode = 1024, // 0x00000400
+    }
 
-[Flags]
-  public enum ScriptText : uint
-  {
-    None = 0,
-    DelayExecution = 1,
-    IsVisible = 2,
-    IsExpression = 32, // 0x00000020
-    IsPersistent = 64, // 0x00000040
-    HostManageSource = 128, // 0x00000080
-    SCRIPTTEXT_ISXDOMAIN = 0x00000100,
-    SCRIPTTEXT_ISNONUSERCODE = 0x00000200,
-  }
+    internal static class EnumPropertyTypes
+    {
+        internal static readonly Guid IDebugPropertyEnumType_All = new Guid("51973C55-CB0C-11D0-B5C9-00A0244A0E7A");
+        internal static readonly Guid IDebugPropertyEnumType_Locals = new Guid("51973C56-CB0C-11D0-B5C9-00A0244A0E7A");
+        internal static readonly Guid IDebugPropertyEnumType_Arguments = new Guid("51973C57-CB0C-11D0-B5C9-00A0244A0E7A");
+        internal static readonly Guid IDebugPropertyEnumType_LocalsPlusArgs = new Guid("51973C58-CB0C-11D0-B5C9-00A0244A0E7A");
+        internal static readonly Guid IDebugPropertyEnumType_Registers = new Guid("51973C59-CB0C-11D0-B5C9-00A0244A0E7A");
+    }
 
-  /*
-#define SCRIPTTEXT_DELAYEXECUTION       0x00000001
-#define SCRIPTTEXT_ISVISIBLE            0x00000002
-#define SCRIPTTEXT_ISEXPRESSION         0x00000020
-#define SCRIPTTEXT_ISPERSISTENT         0x00000040
-#define SCRIPTTEXT_HOSTMANAGESSOURCE    0x00000080
-#define SCRIPTTEXT_ISXDOMAIN            0x00000100
-#define SCRIPTTEXT_ISNONUSERCODE        0x00000200
-#define SCRIPTTEXT_ALL_FLAGS            (SCRIPTTEXT_DELAYEXECUTION | \
-                                         SCRIPTTEXT_ISVISIBLE | \
-                                         SCRIPTTEXT_ISEXPRESSION | \
-                                         SCRIPTTEXT_ISPERSISTENT | \
-                                         SCRIPTTEXT_HOSTMANAGESSOURCE | \
-                                         SCRIPTTEXT_ISXDOMAIN | \
-                                         SCRIPTTEXT_ISNONUSERCODE)
-  */
+    [Flags]
+    internal enum ScriptText : uint
+    {
+        None = 0,
+        DelayExecution = 1,
+        IsVisible = 2,
+        IsExpression = 32, // 0x00000020
+        IsPersistent = 64, // 0x00000040
+        HostManageSource = 128, // 0x00000080
+        SCRIPTTEXT_ISXDOMAIN = 0x00000100,
+        SCRIPTTEXT_ISNONUSERCODE = 0x00000200,
+    }
+
+    public enum TEXT_DOC_ATTR : uint
+    {
+        TEXT_DOC_ATTR_READONLY = 1,
+        UNKOWN2 = 2, // IE
+    }
+
+    /*
+  #define SCRIPTTEXT_DELAYEXECUTION       0x00000001
+  #define SCRIPTTEXT_ISVISIBLE            0x00000002
+  #define SCRIPTTEXT_ISEXPRESSION         0x00000020
+  #define SCRIPTTEXT_ISPERSISTENT         0x00000040
+  #define SCRIPTTEXT_HOSTMANAGESSOURCE    0x00000080
+  #define SCRIPTTEXT_ISXDOMAIN            0x00000100
+  #define SCRIPTTEXT_ISNONUSERCODE        0x00000200
+  #define SCRIPTTEXT_ALL_FLAGS            (SCRIPTTEXT_DELAYEXECUTION | \
+                                           SCRIPTTEXT_ISVISIBLE | \
+                                           SCRIPTTEXT_ISEXPRESSION | \
+                                           SCRIPTTEXT_ISPERSISTENT | \
+                                           SCRIPTTEXT_HOSTMANAGESSOURCE | \
+                                           SCRIPTTEXT_ISXDOMAIN | \
+                                           SCRIPTTEXT_ISNONUSERCODE)
+    */
 
 }

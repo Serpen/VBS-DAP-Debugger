@@ -1,7 +1,7 @@
-public static class Helpers
+internal static class Helpers
 {
     [System.Diagnostics.DebuggerStepThrough()]
-    public static int SUCCESS(int hresult, string name = "", bool throwException = false)
+    internal static int SUCCESS(int hresult, string name = "", bool throwException = false)
     {
         if (hresult != 0)
         {
@@ -17,4 +17,6 @@ public static class Helpers
         }
         return hresult;
     }
+
+    public const int S_OK = 0;
 }

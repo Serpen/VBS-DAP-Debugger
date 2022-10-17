@@ -6,48 +6,39 @@
     <RootNamespace>Serpen.VBSDAPDebugger</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <Platforms>AnyCPU;x86;x64</Platforms>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Platforms>x86;x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
     <StartupObject>Program</StartupObject>
-    <EnableNETAnalyzers>True</EnableNETAnalyzers>
-    <RunAnalyzersDuringBuild>True</RunAnalyzersDuringBuild>
-    <GenerateDocumentationFile>False</GenerateDocumentationFile>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Optimize>False</Optimize>
-    <DebugType>portable</DebugType>
-    <DefineConstants>$(DefineConstants)TRACE;ARCH64</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Optimize>False</Optimize>
     <DebugType>portable</DebugType>
-    <DefineConstants>$(DefineConstants)TRACE;ARCH64</DefineConstants>
+    <DefineConstants>ARCH64;$(DefineConstants)TRACE;</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>False</Optimize>
+    <DebugType>portable</DebugType>
+    <DefineConstants>ARCH64;$(DefineConstants)TRACE;</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <Optimize>False</Optimize>
     <DebugType>portable</DebugType>
-    <DefineConstants>$(DefineConstants)TRACE</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <Optimize>True</Optimize>
-    <DebugType>portable</DebugType>
-    <DefineConstants>$(DefineConstants)TRACE;ARCH64</DefineConstants>
+    <DefineConstants>ARCH32;$(DefineConstants)TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Optimize>True</Optimize>
     <DebugType>portable</DebugType>
-    <DefineConstants>$(DefineConstants)TRACE;ARCH64</DefineConstants>
+    <DefineConstants>ARCH64;$(DefineConstants)TRACE</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <Optimize>True</Optimize>
     <DebugType>portable</DebugType>
-    <DefineConstants>$(DefineConstants)TRACE</DefineConstants>
+    <DefineConstants>ARCH32;$(DefineConstants)TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

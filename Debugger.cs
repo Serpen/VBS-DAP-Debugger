@@ -1,74 +1,61 @@
 using Microsoft.VisualStudio.Debugger.Interop;
+using System.Runtime.InteropServices;
 using static Helpers;
+
+public delegate void CloseHandler();
 
 class Debugger : IApplicationDebugger, IDebugSessionProvider
 {
     public int QueryAlive()
     {
-        System.Diagnostics.Debug.WriteLine("myDebugger.QueryAlive");
-        throw new NotImplementedException();
+        System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(QueryAlive)}");
+        return S_OK;
     }
 
     public int CreateInstanceAtDebugger(ref Guid rclsid, object pUnkOuter, uint dwClsContext, ref Guid riid, out object ppvObject)
     {
-        System.Diagnostics.Debug.WriteLine("myDebugger.CreateInstanceAtDebugger");
+        System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(CreateInstanceAtDebugger)}");
         throw new NotImplementedException();
     }
 
     public int onDebugOutput(string pstr)
     {
-        Console.WriteLine("onDebugOutput {0}", pstr);
-        return 0;
+        System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(onDebugOutput)}: {pstr}");
+        return S_OK;
     }
+
+    public event CloseHandler? Close;
 
     public int onClose()
     {
-        System.Diagnostics.Debug.WriteLine("myDebugger.onClose");
-        throw new NotImplementedException();
+        System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(onClose)}");
+        Close?.Invoke();
+        return S_OK;
     }
 
     public int onDebuggerEvent(ref Guid riid, object punk)
     {
-        System.Diagnostics.Debug.WriteLine("myDebugger.onDebuggerEvent");
-        throw new NotImplementedException();
+        System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(onDebuggerEvent)}");
+        return S_OK;
     }
 
     public int StartDebugSession(IRemoteDebugApplication pda)
     {
-        System.Diagnostics.Debug.WriteLine("myDebugger.StartDebugSession");
+        System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(StartDebugSession)}");
         return SUCCESS(pda.ConnectDebugger(this));
     }
 
-
     public int onHandleBreakPoint(IRemoteDebugApplicationThread prpt, BREAKREASON br, IActiveScriptErrorDebug pError)
     {
+        System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(onHandleBreakPoint)}");
+
         Program.vbsbase.DebugThread = prpt;
 
         SUCCESS(prpt.GetDescription(out var des, out var state));
 
-        SUCCESS(prpt.EnumStackFrames(out var edsf_native));
+        var sf1 = StackFrame.GetFrames(prpt, true).First();
 
-#if ARCH64
-        var enumDebugStackFrames = edsf_native as IEnumDebugStackFrames64 ?? throw new Exception("no IEnumDebugStackFrames");
-#else
-        var enumDebugStackFrames = edsf_native;
-#endif
-
-        SUCCESS(enumDebugStackFrames.Reset());
-
-#if ARCH64
-        var dstd = new DebugStackFrameDescriptor64[1];
-#else
-        var dstd = new DebugStackFrameDescriptor[1];
-#endif
-
-#if ARCH64
-        SUCCESS(enumDebugStackFrames.Next64((uint)dstd.Length, dstd, out _));
-#else
-        SUCCESS(enumDebugStackFrames.Next((uint)dstd.Length, dstd, out _));
-#endif
-
-        SUCCESS(dstd[0].pdsf.GetCodeContext(out var debugCodeContext));
+        SUCCESS(sf1.dsf.GetCodeContext(out var debugCodeContext));
 
         SUCCESS(debugCodeContext.GetDocumentContext(out var debugDocumentContext));
 
@@ -80,14 +67,25 @@ class Debugger : IApplicationDebugger, IDebugSessionProvider
 
         SUCCESS(debugDocumentText.GetLineOfPosition(charpos, out var line, out var charoffset));
 
-        Console.WriteLine($"{br} {des} {state} ");
-        if (br == BREAKREASON.BREAKREASON_ERROR) {
+        debugDocumentText.GetSize(out var totalLines, out var totalChars);
+
+        string text = "";
+        try
+        {
+            IntPtr textPtr = Marshal.AllocHGlobal((int)totalChars);
+            debugDocumentText.GetText(0, textPtr, new ushort[0], totalChars, totalChars); // TODO: ending AND encondig
+            text = Marshal.PtrToStringAuto(textPtr);
+        }
+        catch (Exception) { }
+
+        Console.WriteLine($":{line + 1},{charoffset + 1} {br} {des} {state} ");
+        if (br == BREAKREASON.BREAKREASON_ERROR)
+        {
             var exp = new stdole.EXCEPINFO[1];
             pError.GetExceptionInfo(exp);
-            System.Console.WriteLine($":{line+1},{charoffset+1} {exp[0].bstrSource}: {exp[0].bstrDescription} &H{exp[0].scode.ToString("X")}");
+            System.Console.WriteLine($"{exp[0].bstrSource}: {exp[0].bstrDescription} &H{exp[0].scode.ToString("X")}");
         }
 
-
-        return 0;
-    }   
+        return S_OK;
+    }
 }

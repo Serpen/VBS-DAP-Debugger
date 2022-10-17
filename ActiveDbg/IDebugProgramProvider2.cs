@@ -4,8 +4,8 @@ using System.Runtime.InteropServices;
 namespace ActiveDbg
 {
     [Guid("1959530A-8E53-4E09-AD11-1B7334811CAD")]
-    [InterfaceType(1)]
-    public interface IDebugProgramProvider2My
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IDebugProgramProvider2My
     {
         int GetProviderProcessData([ComAliasName("Microsoft.VisualStudio.Debugger.Interop.PROVIDER_FLAGS")] enum_PROVIDER_FLAGS Flags,
             IDebugDefaultPort2 pPort,

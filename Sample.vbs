@@ -7,41 +7,31 @@ sub my1()
 
     tab = vbTab
 
-    Set delegate = GetRef("caller")
-
-    'set myobj2 = myobj
-    'set ev = GetRef("myobj.handler")
-
-    'myObj.Name = "Marco"
-    'myObj13.Name = "Marco"
-
-    dim zahl
-    zahl = 4
-    zahl = 4
-    
+    Set delegate = GetRef("caller") 
 
     nul = null
     set no = nothing
     ne = empty
 
-    arr = Array(12)
+    arr = Array(4)
 
-    cur = CCur(12)
-
-    
-    'msgbox name
-    'i = CInt(myobj.Age)
-    dbl = CDbl(18)
-    sng = CSng(18)
     boo = CBool(true)
     byt = CByte(55)
+    cur = CCur(12.789)
     dat = CDate(now)
+    dbl = CDbl(18)
     lng = CLng(12)
+    inte = CInt(12)
+    sng = CSng(18)
     str = CStr("hallo")
+
+    Debug.Write "debugwrite"
+
+    Call MsgBox(cur, vbYesNoCancel)
     
     set fso = CreateObject("Scripting.FileSystemObject")
-
     Set dic = CreateObject("Scripting.Dictionary")
+
     Call dic.Add("index","value")
 
     vt = VarType(lng)

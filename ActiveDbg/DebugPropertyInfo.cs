@@ -3,7 +3,7 @@
 namespace ActiveDbg
 {
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    public struct DebugPropertyInfo64
+    internal struct DebugPropertyInfo64
     {
         public ulong m_dwValidFields;
 

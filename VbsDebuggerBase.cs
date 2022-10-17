@@ -2,20 +2,18 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using ActiveDbg;
 using static Helpers;
 using Marshal = System.Runtime.InteropServices.Marshal;
-using stdole;
 
 public class VbsDebuggerBase : IDisposable
 {
-#if ARCH64
-    static internal IProcessDebugManager64 pdm;
 
-    internal IDebugApplication64 debugApplication;
-#else
-    static internal IProcessDebugManager32 pdm;
-    internal IDebugApplication32 debugApplication;
-#endif
+    static internal IProcessDebugManager64 pdm64;
+    internal IDebugApplication64 debugApplication64;
 
-    private IApplicationDebugger applicationDebugger;
+    static internal IProcessDebugManager32 pdm32;
+    internal IDebugApplication32 debugApplication32;
+
+
+    private Debugger applicationDebugger;
     static IActiveScriptMy languageEngine;
     private IActiveScriptSiteMy scriptSite;
     internal IRemoteDebugApplicationThread DebugThread;
@@ -28,11 +26,9 @@ public class VbsDebuggerBase : IDisposable
 
     static VbsDebuggerBase()
     {
-#if ARCH64
-        pdm = Activator.CreateInstance(PDMtype) as IProcessDebugManager64 ?? throw new Exception($"no {nameof(IProcessDebugManager64)}");
-#else
-        //pdm = Activator.CreateInstance(PDMtype) as IProcessDebugManager32 ?? throw new Exception($"no {nameof(IProcessDebugManager32)}");
-#endif
+        pdm64 = Activator.CreateInstance(PDMtype) as IProcessDebugManager64; // ?? throw new Exception($"no {nameof(IProcessDebugManager64)}");
+        pdm32 = Activator.CreateInstance(PDMtype) as IProcessDebugManager32; // ?? throw new Exception($"no {nameof(IProcessDebugManager32)}");
+
         languageEngine = Activator.CreateInstance(VBScriptType) as IActiveScriptMy ?? throw new Exception($"no {nameof(IActiveScriptMy)}");
 
         var sefPtr = Marshal.AllocHGlobal((Marshal.SizeOf<Guid>()));
@@ -45,31 +41,51 @@ public class VbsDebuggerBase : IDisposable
     public VbsDebuggerBase()
     {
         //SUCCESS(m_processDebugManager.GetDefaultApplication(out var m_debugApplication));
-        SUCCESS(pdm.CreateApplication(out debugApplication));
-        ArgumentNullException.ThrowIfNull(debugApplication);
-
-        SUCCESS(debugApplication.SetName(nameof(VbsDebuggerBase)));
-
-        SUCCESS(pdm.AddApplication(debugApplication, out var cookie));
-
-        applicationDebugger = new Debugger();
-
-        var debugSessionProvider = applicationDebugger as IDebugSessionProvider ?? throw new Exception($"no {nameof(IDebugSessionProvider)}");
-
-        SUCCESS(debugSessionProvider.StartDebugSession(debugApplication));
-
-        scriptSite = new ScriptSite(debugApplication) ?? throw new Exception($"no {nameof(IActiveScriptSite)}");
+        if (pdm64 is not null)
+        {
+            SUCCESS(pdm64.CreateApplication(out debugApplication64));
+            ArgumentNullException.ThrowIfNull(debugApplication64);
+            SUCCESS(debugApplication64.SetName(nameof(VbsDebuggerBase)));
+            SUCCESS(pdm64.AddApplication(debugApplication64, out var cookie));
+            applicationDebugger = new Debugger();
+            var debugSessionProvider = applicationDebugger as IDebugSessionProvider ?? throw new Exception($"no {nameof(IDebugSessionProvider)}");
+            SUCCESS(debugSessionProvider.StartDebugSession(debugApplication64));
+            scriptSite = new ScriptSite(debugApplication64) ?? throw new Exception($"no {nameof(IActiveScriptSite)}");
+        }
+        else
+        {
+            SUCCESS(pdm32.CreateApplication(out debugApplication32));
+            ArgumentNullException.ThrowIfNull(debugApplication32);
+            SUCCESS(debugApplication32.SetName(nameof(VbsDebuggerBase)));
+            SUCCESS(pdm32.AddApplication(debugApplication32, out var cookie));
+            applicationDebugger = new Debugger();
+            var debugSessionProvider = applicationDebugger as IDebugSessionProvider ?? throw new Exception($"no {nameof(IDebugSessionProvider)}");
+            SUCCESS(debugSessionProvider.StartDebugSession(debugApplication32));
+            scriptSite = new ScriptSite(debugApplication32) ?? throw new Exception($"no {nameof(IActiveScriptSite)}");
+        }
 
         // border for -> Parse
     }
 
+    internal void CloseEvent()
+    {
+        connected = false;
+    }
+
+
     internal void setBreakPoint(uint line)
     {
-        var iasd64 = languageEngine as IActiveScriptDebug64 ?? throw new Exception("no IActiveScriptDebug64");
+        var iasd32 = languageEngine as IActiveScriptDebug32;
+        var iasd64 = languageEngine as IActiveScriptDebug64;
+        IDebugCodeContext dcc;
+        IEnumDebugCodeContexts enumDebugCodeContexts;
 
-        SUCCESS(iasd64.EnumCodeContextsOfPosition(0, line, 0, out var enumDebugCodeContexts));
+        if (iasd64 is not null)
+            SUCCESS(iasd64.EnumCodeContextsOfPosition(0, line, 0, out enumDebugCodeContexts));
+        else
+            SUCCESS(iasd32.EnumCodeContextsOfPosition(0, line, 0, out enumDebugCodeContexts));
 
-        SUCCESS(enumDebugCodeContexts.Next(1, out var dcc, out var _));
+        SUCCESS(enumDebugCodeContexts.Next(1, out dcc, out var _));
 
         SUCCESS(dcc.SetBreakPoint(BREAKPOINT_STATE.BREAKPOINT_ENABLED));
     }
@@ -85,43 +101,66 @@ public class VbsDebuggerBase : IDisposable
 
     public void Parse(string scriptText)
     {
-        // border for <- .ctor
         SUCCESS(languageEngine.SetScriptSite(scriptSite));
-#if ARCH64
-        var _parse = languageEngine as IActiveScriptParse64 ?? throw new Exception($"no {nameof(IActiveScriptParse64)}");
-#else
-        var _parse = languageEngine as IActiveScriptParse32 ?? throw new Exception($"no {nameof(IActiveScriptParse32)}");
-#endif
-        SUCCESS(_parse.InitNew());
+
+        var parser32 = languageEngine as IActiveScriptParse32;
+        var parser64 = languageEngine as IActiveScriptParse64;
+
+        if (parser64 is not null)
+            Parse64(parser64, scriptText, ScriptText.IsVisible);
+        else
+            Parse32(parser32, scriptText, ScriptText.IsVisible);
+    }
+
+    public object Invoke(string scriptText)
+    {
+        SUCCESS(languageEngine.SetScriptSite(scriptSite));
+
+        var parser32 = languageEngine as IActiveScriptParse32;
+        var parser64 = languageEngine as IActiveScriptParse64;
+
+        if (parser64 is not null)
+            return Parse64(parser64, scriptText, ScriptText.IsVisible | ScriptText.IsExpression);
+        else
+            return Parse32(parser32, scriptText, ScriptText.IsVisible | ScriptText.IsExpression);
+    }
+
+
+    object Parse32(IActiveScriptParse32 parser, string scriptText, ScriptText flags)
+    {
+        // border for <- .ctor
+        SUCCESS(parser.InitNew());
 
         TestClass myObj = new TestClass("Hallo", 1);
         SUCCESS(languageEngine.AddNamedItem(nameof(myObj), (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
         (scriptSite as ScriptSite).NamedItems.Add(nameof(myObj), myObj);
 
         var obj = new stdole.EXCEPINFO[1];
-        SUCCESS(_parse.ParseScriptText(scriptText, null, null, null, 0, 0, (uint)(ScriptText.IsVisible), out var result, null), throwException: true);
+        SUCCESS(parser.ParseScriptText(scriptText, null, null, null, 0, 0, (uint)flags, out var result, null), throwException: true);
         System.Console.WriteLine("ParseScriptText finished " + myObj.Name);
+        return result;
     }
 
-    public object Invoke(string expression)
+
+    object Parse64(IActiveScriptParse64 parser, string scriptText, ScriptText flags)
     {
         // border for <- .ctor
-        SUCCESS(languageEngine.SetScriptSite(scriptSite));
-#if ARCH64
-        var _parse = languageEngine as IActiveScriptParse64 ?? throw new Exception($"no {nameof(IActiveScriptParse64)}");
-#else
-        var _parse = languageEngine as IActiveScriptParse32 ?? throw new Exception($"no {nameof(IActiveScriptParse32)}");
-#endif
-        SUCCESS(_parse.InitNew());
+        SUCCESS(parser.InitNew());
 
-        SUCCESS(_parse.ParseScriptText(expression, null, null, null, 0, 0, (uint)(ScriptText.IsVisible | ScriptText.IsExpression), out var result, null), throwException: true);
-        System.Console.WriteLine("ParseScriptText finished " + result);
+        TestClass myObj = new TestClass("Hallo", 1);
+        SUCCESS(languageEngine.AddNamedItem(nameof(myObj), (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
+        (scriptSite as ScriptSite).NamedItems.Add(nameof(myObj), myObj);
+
+        var obj = new stdole.EXCEPINFO[1];
+        SUCCESS(parser.ParseScriptText(scriptText, null, null, null, 0, 0, (uint)flags, out var result, null), throwException: true);
+        System.Console.WriteLine("ParseScriptText finished " + myObj.Name);
         return result;
     }
 
     public void Dispose()
     {
-        SUCCESS(debugApplication.DisconnectDebugger());
+        debugApplication32?.DisconnectDebugger();
+        debugApplication64?.DisconnectDebugger();
         SUCCESS(languageEngine.Close());
     }
 
@@ -130,8 +169,8 @@ public class VbsDebuggerBase : IDisposable
         var outlist = new List<System.Diagnostics.Process>();
         var pdm2 = Activator.CreateInstance(MSProgramProvider2Type) as IDebugProgramProvider2My ?? throw new Exception("no IDebugProgramProvider2");
 
-        foreach (var proc in System.Diagnostics.Process.GetProcesses())
-        // foreach (var proc in System.Diagnostics.Process.GetProcessesByName("iexplore"))
+        // foreach (var proc in System.Diagnostics.Process.GetProcesses())
+        foreach (var proc in System.Diagnostics.Process.GetProcessesByName("iexplore"))
         {
             System.Diagnostics.Debug.WriteLine("process {0} {1}...", proc, proc.Id);
 
@@ -152,11 +191,11 @@ public class VbsDebuggerBase : IDisposable
         return outlist;
     }
 
+    bool connected;
 
-    // not working
-    internal static void Attach(System.Diagnostics.Process proc)
+    internal void Attach(System.Diagnostics.Process proc)
     {
-        var outlist = new List<System.Diagnostics.Process>();
+
         var pdm2 = Activator.CreateInstance(MSProgramProvider2Type) as IDebugProgramProvider2My ?? throw new Exception("no IDebugProgramProvider2");
 
         System.Diagnostics.Debug.WriteLine("process {0} {1}...", proc, proc.Id);
@@ -170,18 +209,37 @@ public class VbsDebuggerBase : IDisposable
 
             SUCCESS(result);
 
-            var dpn2Guid = new Guid("426E255C-F1CE-4D02-A931-F9A254BF7F0F");
 
-            Marshal.QueryInterface(provdata.ProgramNodes.Members, ref dpn2Guid, out var ptr1);
+            var dpn2Guid = new Guid((typeof(IDebugProgramNode2).GetCustomAttributes(typeof(System.Runtime.InteropServices.GuidAttribute), false).First() as System.Runtime.InteropServices.GuidAttribute).Value); // new Guid("426E255C-F1CE-4D02-A931-F9A254BF7F0F");
+            var rdaGuid = new Guid((typeof(IRemoteDebugApplication).GetCustomAttributes(typeof(System.Runtime.InteropServices.GuidAttribute), false).First() as System.Runtime.InteropServices.GuidAttribute).Value); // new Guid("51973C30-CB0C-11D0-B5C9-00A0244A0E7A"); 
+
+            var ptrptr = Marshal.ReadIntPtr(provdata.ProgramNodes.Members);
+
+
+            Marshal.QueryInterface(ptrptr, ref dpn2Guid, out var ptr1);
 
             var dpn2_ = Marshal.GetObjectForIUnknown(ptr1);
-            var dpn2 = dpn2_ as IDebugProgramNode2;
-            var dppn2 = dpn2 as IDebugProviderProgramNode2;
+            // var dpn2 = dpn2_ as IDebugProgramNode2;
+            var dppn2 = dpn2_ as IDebugProviderProgramNode2;
 
-            var rdaGuid = new Guid("51973C30-CB0C-11D0-B5C9-00A0244A0E7A");
             dppn2.UnmarshalDebuggeeInterface(ref rdaGuid, out var ptr2);
 
             var rda = Marshal.GetObjectForIUnknown(ptr2) as IRemoteDebugApplication;
+
+            rda.ConnectDebugger(applicationDebugger);
+            //rda.CauseBreak();
+            connected = true;
+
+            // while (connected) {
+            //     System.Threading.Thread.Sleep(10000);
+            // }
+
+            // var debugSessionProvider = applicationDebugger as IDebugSessionProvider ?? throw new Exception($"no {nameof(IDebugSessionProvider)}");
+
+            // SUCCESS(debugSessionProvider.StartDebugSession(debugApplication));
+
+            // scriptSite = new ScriptSite(debugApplication) ?? throw new Exception($"no {nameof(IActiveScriptSite)}");
+
 
             //  dpn2 = provdata.ProgramNodes.Members as IDebugProgramNode2;
         }

@@ -8,79 +8,73 @@ public class Variable
     private readonly DebugPropertyInfo propertyInfo;
     private readonly bool Is64;
 
-    public static IEnumerable<Variable> getVariables(IRemoteDebugApplicationThread prpt )
+    public static IEnumerable<Variable> getVariables(IRemoteDebugApplicationThread prpt)
     {
-        
+        var sf1 = StackFrame.GetFrames(prpt, true).First();
+
+        SUCCESS(sf1.dsf.GetDebugProperty(out var debugProperty));
+
+        SUCCESS(debugProperty.EnumMembers((uint)(ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_STANDARD), 10, EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32));
+
+        var enumDebugPropertyInfo64 = enumDebugPropertyInfo32 as ActiveDbg.IEnumDebugPropertyInfo64;
+
+        if (enumDebugPropertyInfo64 is not null)
+            return getVariables64(enumDebugPropertyInfo64);
+        else
+            return getVariables32(enumDebugPropertyInfo32);
+    }
+
+    static IEnumerable<Variable> getVariables32(IEnumDebugPropertyInfo edpi32)
+    {
         var retList = new List<Variable>();
-        SUCCESS(prpt.EnumStackFrames(out var edsf_native));
 
-#if ARCH64
-        var enumDebugStackFrames = edsf_native as IEnumDebugStackFrames64 ?? throw new Exception("no IEnumDebugStackFrames"); ;
-#else
-        var enumDebugStackFrames = edsf_native;
-#endif
+        edpi32.Reset();
 
-        var edsf2 = edsf_native as IEnumDebugStackFrames2;
+        edpi32.GetCount(out var count);
 
-        SUCCESS(enumDebugStackFrames.Reset());
+        var dpi = new DebugPropertyInfo[count];
 
         uint fetched = 0;
-
-#if ARCH64
-        var dstd = new DebugStackFrameDescriptor64[1];
-        
-
-        SUCCESS(enumDebugStackFrames.Next64(1, dstd, out fetched));
-#else
-        var dstd = new DebugStackFrameDescriptor[1];
-
-        SUCCESS(enumDebugStackFrames.Next(1, dstd, out fetched));
-#endif
-
-        SUCCESS(dstd[0].pdsf.GetDebugProperty(out var debugProperty));
-        
-        //var dp2 = debugProperty as IDebugProperty2;
-        //var dp3 = debugProperty as IDebugProperty3;
-
-        var flags = (uint)(ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_STANDARD);
-        //flags = (uint)enum_DBGPROP_INFO_FLAGS.DBGPROP_INFO_TYPE;
-
-        SUCCESS(debugProperty.EnumMembers(flags, 10, EnumPropertyTypes.IDebugPropertyEnumType_All, out var edpi_native));
-
-
-#if ARCH64
-        var enumDebugPropertyInfo = edpi_native as ActiveDbg.IEnumDebugPropertyInfoMy ?? throw new Exception("no IEnumDebugStackFrames"); ;
-#else
-        var enumDebugPropertyInfo = edpi_native;
-#endif
-
-        enumDebugPropertyInfo.Reset();
-
-        enumDebugPropertyInfo.GetCount(out var count);
-
-#if ARCH64
-        var dpi = new ActiveDbg.DebugPropertyInfo64[count];
-#else
-        var dpi = new DebugPropertyInfo[count];
-#endif
         do
         {
-            enumDebugPropertyInfo.Next(count, dpi, out fetched);
+            edpi32.Next(count, dpi, out fetched);
 
             for (int i = 0; i < fetched; i++)
                 retList.Add(new Variable(dpi[i]));
-           
-        } while (fetched > 0 );
+
+        } while (fetched > 0);
         return retList;
     }
 
-    public Variable(DebugPropertyInfo64 propertyInfo64)
+    static IEnumerable<Variable> getVariables64(ActiveDbg.IEnumDebugPropertyInfo64 edpi64)
+    {
+        var retList = new List<Variable>();
+
+        edpi64.Reset();
+
+        edpi64.GetCount(out var count);
+
+        var dpi = new ActiveDbg.DebugPropertyInfo64[count];
+
+        uint fetched = 0;
+        do
+        {
+            edpi64.Next(count, dpi, out fetched);
+
+            for (int i = 0; i < fetched; i++)
+                retList.Add(new Variable(dpi[i]));
+
+        } while (fetched > 0);
+        return retList;
+    }
+
+    internal Variable(DebugPropertyInfo64 propertyInfo64)
     {
         this.propertyInfo64 = propertyInfo64;
         Is64 = true;
     }
 
-    public Variable(DebugPropertyInfo propertyInfo)
+    internal Variable(DebugPropertyInfo propertyInfo)
     {
         this.propertyInfo = propertyInfo;
         Is64 = false;

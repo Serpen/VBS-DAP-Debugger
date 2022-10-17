@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 
 namespace ActiveDbg
 {
-    public struct PROVIDER_PROCESS_DATAMy
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PROVIDER_PROCESS_DATAMy
     {
-        [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.PROVIDER_FIELDS")]
         public uint Fields;
         public PROGRAM_NODE_ARRAYMy ProgramNodes;
         public int fIsDebuggerPresent;

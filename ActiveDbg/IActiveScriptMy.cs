@@ -7,8 +7,8 @@ namespace ActiveDbg
 {
     [ComImport]
     [Guid("BB1A2AE1-A4F9-11CF-8F20-00805F2CD064")]
-    [InterfaceType(1)]
-    public interface IActiveScriptMy
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IActiveScriptMy
     {
         [MethodImpl(MethodImplOptions.PreserveSig | MethodImplOptions.InternalCall)]
         int SetScriptSite([In][MarshalAs(UnmanagedType.Interface)] IActiveScriptSiteMy pass);

@@ -2,20 +2,16 @@
 // AD7Interop.dll
 #endregion
 
-using Microsoft.VisualStudio.Debugger.Interop;
 using System.Runtime.InteropServices;
 
 namespace ActiveDbg
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct PROGRAM_NODE_ARRAYMy
+    internal struct PROGRAM_NODE_ARRAYMy
     {
         public uint dwCount;
 
-        // [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.IDebugProgramNode2")] [MarshalAs(UnmanagedType.IUnknown)]
-        public IntPtr Members;
-        // public IDebugProgramNode2 Members;
-        public uint dwCount2;
+        public /*IDebugProgramNode2*/ IntPtr Members; // Pointer of Pointer **
         
     }
 }

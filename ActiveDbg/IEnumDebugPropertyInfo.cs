@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 namespace ActiveDbg
 {
     [ComImport]
-    [InterfaceType(1)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [Guid("51973C51-CB0C-11D0-B5C9-00A0244A0E7A")]
-    public interface IEnumDebugPropertyInfoMy
+    internal interface IEnumDebugPropertyInfo64
     {
         [MethodImpl(MethodImplOptions.PreserveSig | MethodImplOptions.InternalCall)]
         int Next([In] uint celt, [Out][MarshalAs(UnmanagedType.LPArray)] DebugPropertyInfo64[] pinfo, out uint pcEltsfetched);

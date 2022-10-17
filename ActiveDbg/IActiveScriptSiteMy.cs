@@ -7,8 +7,8 @@ namespace ActiveDbg
 {
     [ComImport]
     [Guid("DB01A1E3-A42B-11CF-8F20-00805F2CD064")]
-    [InterfaceType(1)]
-    public interface IActiveScriptSiteMy
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    internal interface IActiveScriptSiteMy
     {
         [MethodImpl(MethodImplOptions.PreserveSig | MethodImplOptions.InternalCall)]
         int GetLCID(out uint plcid);
@@ -16,7 +16,7 @@ namespace ActiveDbg
         //IActiveScriptSite
         //[MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "System.Runtime.InteropServices.CustomMarshalers.TypeToTypeInfoMarshaler, CustomMarshalers, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         //Microsoft.VisualStudio.OLE.Interop.ITypeInfo
-        
+
         //        Microsoft.VisualStudio.Debugger.Interop.TYPE_INFO
         //https://admhelp.microfocus.com/uft/en/all/VBScript/Content/html/f859ed3b-02c1-4924-99f8-5f5bf1bf8405.htm
         [MethodImpl(MethodImplOptions.PreserveSig | MethodImplOptions.InternalCall)]

@@ -11,14 +11,25 @@
         if (args.Length == 0)
             args = new String[] { ".\\Sample.vbs" };
 
-        foreach (var proc in VbsDebuggerBase.GetScriptProcesses())
-            VbsDebuggerBase.Attach(proc);
-        
-        return;
         vbsbase = new VbsDebuggerBase();
 
-        var thread = new Thread(new ParameterizedThreadStart(Go));
-        thread.Start(System.IO.File.ReadAllText(args[0]));
+        Thread? th = null;
+
+        if (false)
+        {
+            foreach (var proc in VbsDebuggerBase.GetScriptProcesses())
+            {
+                // th = new Thread(new ParameterizedThreadStart(Attach));
+                // th.Start(proc);
+                Attach(proc);
+                break;
+            }
+        }
+        else
+        {
+            th = new Thread(new ParameterizedThreadStart(Go));
+            th.Start(System.IO.File.ReadAllText(args[0]));
+        }
 
         // var pipeServer = new System.IO.Pipes.NamedPipeServerStream("Serpen.vbsdebugger", System.IO.Pipes.PipeDirection.InOut, 1, System.IO.Pipes.PipeTransmissionMode.Message, System.IO.Pipes.PipeOptions.None);
         // Reader = new StreamReader(pipeServer);
@@ -31,12 +42,13 @@
         do
         {
             System.Threading.Thread.Sleep(2000);
-            Writer.Write("Action (B/S/V/X/Q): ");
+            Writer.Write("Action (B/S/V/R/Q): ");
             choice = Reader.ReadLine()?.ToUpper() ?? "";
-            if (choice == "X")
+            if (choice == "R")
             {
-                var resThread = new Thread(new ThreadStart(resume));
-                resThread.Start();
+                // var resThread = new Thread(new ThreadStart(resume));
+                // resThread.Start();
+                resume();
             }
             else if (choice == "F" | choice == "S")
             {
@@ -54,12 +66,12 @@
                 if (System.UInt32.TryParse(Reader.ReadLine(), out var line))
                     vbsbase.setBreakPoint(line);
             }
-        } while (choice != "" || choice == "Q");
+        } while (choice != "" && choice != "Q");
         try
         {
             vbsbase.DebugThread?.Resume(out uint _);
-            thread?.Interrupt();
-            thread?.Abort();
+            th?.Interrupt();
+            th?.Abort();
         }
         catch
         {
@@ -76,7 +88,12 @@
     {
         if (obj is string text)
             vbsbase.Parse(text);
-        //vbsbase.Invoke("ScriptEngineMajorVersion & \".\" & ScriptEngineMinorVersion & \".\" & ScriptEngineBuildVersion,");
+        // vbsbase.Invoke("ScriptEngineMajorVersion & \".\" & ScriptEngineMinorVersion & \".\" & ScriptEngineBuildVersion");
 
+    }
+
+    static void Attach(object? obj)
+    {
+        vbsbase.Attach(obj as System.Diagnostics.Process);
     }
 }
