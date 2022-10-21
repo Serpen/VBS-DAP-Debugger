@@ -4,6 +4,8 @@ using static Helpers;
 
 public class Variable
 {
+
+    private const ActiveDbg.enum_DEBUGPROP_INFO_FLAGS PROP_INFO_STANDARD = (ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_NAME | ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_TYPE | ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_VALUE | ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_ATTRIBUTES);
     private readonly DebugPropertyInfo64 propertyInfo64;
     private readonly DebugPropertyInfo propertyInfo;
     private readonly bool Is64;
@@ -14,7 +16,7 @@ public class Variable
 
         SUCCESS(sf1.dsf.GetDebugProperty(out var debugProperty));
 
-        SUCCESS(debugProperty.EnumMembers((uint)(ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_STANDARD), 10, EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32));
+        SUCCESS(debugProperty.EnumMembers((uint)(PROP_INFO_STANDARD | ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_DEBUGPROP), 10, EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32));
 
         var enumDebugPropertyInfo64 = enumDebugPropertyInfo32 as ActiveDbg.IEnumDebugPropertyInfo64;
 
@@ -87,6 +89,25 @@ public class Variable
     public ActiveDbg.enum_DEBUGPROP_INFO_FLAGS ValidFields => Is64 ? (ActiveDbg.enum_DEBUGPROP_INFO_FLAGS)propertyInfo64.m_dwValidFields : (ActiveDbg.enum_DEBUGPROP_INFO_FLAGS)propertyInfo.m_dwValidFields;
     public ActiveDbg.enum_DBGPROP_ATTRIB_FLAGS Attributes => Is64 ? (ActiveDbg.enum_DBGPROP_ATTRIB_FLAGS)propertyInfo64.m_dwAttrib : (ActiveDbg.enum_DBGPROP_ATTRIB_FLAGS)propertyInfo.m_dwAttrib;
 
+    public IEnumerable<Variable> Members
+    {
+        get
+        {
+            if (propertyInfo64.m_pDebugProp is not null)
+            {
+                SUCCESS(propertyInfo64.m_pDebugProp.EnumMembers((uint)(PROP_INFO_STANDARD | ActiveDbg.enum_DEBUGPROP_INFO_FLAGS.PROP_INFO_DEBUGPROP), 10, EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32));
+
+                var enumDebugPropertyInfo64 = enumDebugPropertyInfo32 as ActiveDbg.IEnumDebugPropertyInfo64;
+
+                if (enumDebugPropertyInfo64 is not null)
+                    return getVariables64(enumDebugPropertyInfo64);
+                else if (enumDebugPropertyInfo32 is not null)
+                    return getVariables32(enumDebugPropertyInfo32);
+
+            }
+            return Array.Empty<Variable>();
+        }
+    }
     public override string ToString()
     {
         return $"{Name}{(!String.IsNullOrEmpty(Fullname) ? " [" + Fullname + "]" : "")} As {Type} = {Value} ' {Attributes}";

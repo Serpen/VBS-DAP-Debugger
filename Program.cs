@@ -9,7 +9,7 @@
     {
         System.Console.WriteLine("x");
         if (args.Length == 0)
-            args = new String[] { ".\\Sample.vbs" };
+            args = new String[] { ".\\objectrecprop.vbs" };
 
         vbsbase = new VbsDebuggerBase();
 
@@ -58,7 +58,17 @@
             else if (choice == "V")
             {
                 foreach (var v in Variable.getVariables(vbsbase.DebugThread))
+                {
                     Writer.WriteLine(v);
+                    foreach (var mem in v.Members)
+                    {
+                        Writer.WriteLine(" ." + mem);
+                        foreach (var mem2 in mem.Members)
+                        {
+                            Writer.WriteLine("  ." + mem2);
+                        }
+                    }
+                }
             }
             else if (choice == "B")
             {

@@ -131,13 +131,13 @@ public class VbsDebuggerBase : IDisposable
         // border for <- .ctor
         SUCCESS(parser.InitNew());
 
-        TestClass myObj = new TestClass("Hallo", 1);
-        SUCCESS(languageEngine.AddNamedItem(nameof(myObj), (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
-        (scriptSite as ScriptSite).NamedItems.Add(nameof(myObj), myObj);
+        // TestClass myObj = new TestClass("Hallo", 1);
+        // SUCCESS(languageEngine.AddNamedItem(nameof(myObj), (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
+        // (scriptSite as ScriptSite).NamedItems.Add(nameof(myObj), myObj);
 
         var obj = new stdole.EXCEPINFO[1];
         SUCCESS(parser.ParseScriptText(scriptText, null, null, null, 0, 0, (uint)flags, out var result, null), throwException: true);
-        System.Console.WriteLine("ParseScriptText finished " + myObj.Name);
+        // System.Console.WriteLine("ParseScriptText finished " + myObj.Name);
         return result;
     }
 
@@ -147,13 +147,13 @@ public class VbsDebuggerBase : IDisposable
         // border for <- .ctor
         SUCCESS(parser.InitNew());
 
-        TestClass myObj = new TestClass("Hallo", 1);
-        SUCCESS(languageEngine.AddNamedItem(nameof(myObj), (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
-        (scriptSite as ScriptSite).NamedItems.Add(nameof(myObj), myObj);
+        // TestClass myObj = new TestClass("Hallo", 1);
+        // SUCCESS(languageEngine.AddNamedItem(nameof(myObj), (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
+        // (scriptSite as ScriptSite).NamedItems.Add(nameof(myObj), myObj);
 
         var obj = new stdole.EXCEPINFO[1];
         SUCCESS(parser.ParseScriptText(scriptText, null, null, null, 0, 0, (uint)flags, out var result, null), throwException: true);
-        System.Console.WriteLine("ParseScriptText finished " + myObj.Name);
+        // System.Console.WriteLine("ParseScriptText finished " + myObj.Name);
         return result;
     }
 
@@ -198,8 +198,6 @@ public class VbsDebuggerBase : IDisposable
 
         var pdm2 = Activator.CreateInstance(MSProgramProvider2Type) as IDebugProgramProvider2My ?? throw new Exception("no IDebugProgramProvider2");
 
-        System.Diagnostics.Debug.WriteLine("process {0} {1}...", proc, proc.Id);
-
         var adprocid = new AD_PROCESS_ID() { dwProcessId = (uint)proc.Id, ProcessIdType = (uint)enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM };
 
         int result = 1;
@@ -226,7 +224,12 @@ public class VbsDebuggerBase : IDisposable
 
             var rda = Marshal.GetObjectForIUnknown(ptr2) as IRemoteDebugApplication;
 
+            System.Diagnostics.Debug.WriteLine("process {0} {1} {3}", proc, proc.Id, rda.GetName(out var rdaname), rdaname);
+
             rda.ConnectDebugger(applicationDebugger);
+            // rda.GetRootNode(out var dan);
+            // dan.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out var name1);
+            
             //rda.CauseBreak();
             connected = true;
 

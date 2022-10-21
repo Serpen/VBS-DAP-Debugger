@@ -22,7 +22,7 @@ namespace ActiveDbg
         public ulong m_dwAttrib;
 
         [MarshalAs(UnmanagedType.Interface)]
-        public object /*IDebugProperty*/ m_pDebugProp;
+        public Microsoft.VisualStudio.Debugger.Interop.IDebugProperty m_pDebugProp;
 
     }
 }
