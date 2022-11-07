@@ -12,24 +12,29 @@ public class VbsDebuggerBase : IDisposable
     static internal IProcessDebugManager32 pdm32;
     internal IDebugApplication32 debugApplication32;
 
-
     private Debugger applicationDebugger;
+
+    static dynamic VBScript;
     static IActiveScriptMy languageEngine;
     private IActiveScriptSiteMy scriptSite;
     internal IRemoteDebugApplicationThread DebugThread;
 
-    readonly static Type PDMtype = Type.GetTypeFromProgID("ProcessDebugManager") ?? throw new Exception("no def ProcessDebugManager");
-    readonly static Type VBScriptType = System.Type.GetTypeFromProgID("VBScript") ?? throw new Exception("no def VBScript");
     static readonly Type MSProgramProvider2Type = Type.GetTypeFromCLSID(new Guid("{170EC3FC-4E80-40AB-A85A-55900C7C70DE}")) ?? throw new Exception("no pdm2type");
 
     static readonly CONST_GUID_ARRAY ScriptEngineFilter;
 
+    bool parsedInited = true;
+
     static VbsDebuggerBase()
     {
+        var PDMtype = Type.GetTypeFromProgID("ProcessDebugManager") ?? throw new Exception("no def ProcessDebugManager");
+        var VBScriptType = Type.GetTypeFromProgID("VBScript") ?? throw new Exception("no def VBScript");
+
         pdm64 = Activator.CreateInstance(PDMtype) as IProcessDebugManager64; // ?? throw new Exception($"no {nameof(IProcessDebugManager64)}");
         pdm32 = Activator.CreateInstance(PDMtype) as IProcessDebugManager32; // ?? throw new Exception($"no {nameof(IProcessDebugManager32)}");
 
-        languageEngine = Activator.CreateInstance(VBScriptType) as IActiveScriptMy ?? throw new Exception($"no {nameof(IActiveScriptMy)}");
+        VBScript = Activator.CreateInstance(VBScriptType) ?? throw new Exception($"no {nameof(VBScript)}");
+        languageEngine = VBScript as IActiveScriptMy ?? throw new Exception($"no {nameof(IActiveScriptMy)}");
 
         var sefPtr = Marshal.AllocHGlobal((Marshal.SizeOf<Guid>()));
 
@@ -99,61 +104,77 @@ public class VbsDebuggerBase : IDisposable
         }
     }
 
-    public void Parse(string scriptText)
+    public void Parse(string scriptText, IDictionary<string, object> namedItems = null)
     {
-        SUCCESS(languageEngine.SetScriptSite(scriptSite));
-
         var parser32 = languageEngine as IActiveScriptParse32;
         var parser64 = languageEngine as IActiveScriptParse64;
 
         if (parser64 is not null)
-            Parse64(parser64, scriptText, ScriptText.IsVisible);
+            Parse64(parser64, scriptText, ScriptText.IsVisible, namedItems);
         else
-            Parse32(parser32, scriptText, ScriptText.IsVisible);
+            Parse32(parser32, scriptText, ScriptText.IsVisible, namedItems);
     }
 
-    public object Invoke(string scriptText)
+    public object Invoke(string scriptText, IDictionary<string, object> namedItems = null)
     {
-        SUCCESS(languageEngine.SetScriptSite(scriptSite));
-
         var parser32 = languageEngine as IActiveScriptParse32;
         var parser64 = languageEngine as IActiveScriptParse64;
 
         if (parser64 is not null)
-            return Parse64(parser64, scriptText, ScriptText.IsVisible | ScriptText.IsExpression);
+            return Parse64(parser64, scriptText, ScriptText.IsVisible | ScriptText.IsExpression, namedItems);
         else
-            return Parse32(parser32, scriptText, ScriptText.IsVisible | ScriptText.IsExpression);
+            return Parse32(parser32, scriptText, ScriptText.IsVisible | ScriptText.IsExpression, namedItems);
     }
 
 
-    object Parse32(IActiveScriptParse32 parser, string scriptText, ScriptText flags)
+    object Parse32(IActiveScriptParse32 parser, string scriptText, ScriptText flags, IDictionary<string, object> namedItems)
     {
         // border for <- .ctor
-        SUCCESS(parser.InitNew());
 
-        // TestClass myObj = new TestClass("Hallo", 1);
-        // SUCCESS(languageEngine.AddNamedItem(nameof(myObj), (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
-        // (scriptSite as ScriptSite).NamedItems.Add(nameof(myObj), myObj);
+        // must be set on same thread??
+        SUCCESS(languageEngine.SetScriptSite(scriptSite));
 
-        var obj = new stdole.EXCEPINFO[1];
+        if (!parsedInited)
+        {
+            SUCCESS(parser.InitNew());
+            parsedInited = true;
+        }
+
+        namedItems ??= new Dictionary<string, object>();
+
+        foreach (var obj in namedItems)
+        {
+            SUCCESS(languageEngine.AddNamedItem(obj.Key, (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
+            (scriptSite as ScriptSite).NamedItems.Add(obj.Key, obj.Value);
+        }
+
         SUCCESS(parser.ParseScriptText(scriptText, null, null, null, 0, 0, (uint)flags, out var result, null), throwException: true);
-        // System.Console.WriteLine("ParseScriptText finished " + myObj.Name);
         return result;
     }
 
 
-    object Parse64(IActiveScriptParse64 parser, string scriptText, ScriptText flags)
+    object Parse64(IActiveScriptParse64 parser, string scriptText, ScriptText flags, IDictionary<string, object> namedItems)
     {
         // border for <- .ctor
-        SUCCESS(parser.InitNew());
 
-        // TestClass myObj = new TestClass("Hallo", 1);
-        // SUCCESS(languageEngine.AddNamedItem(nameof(myObj), (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
-        // (scriptSite as ScriptSite).NamedItems.Add(nameof(myObj), myObj);
+        // must be set on same thread??
+        SUCCESS(languageEngine.SetScriptSite(scriptSite));
 
-        var obj = new stdole.EXCEPINFO[1];
+        if (!parsedInited)
+        {
+            SUCCESS(parser.InitNew());
+            parsedInited = true;
+        }
+
+        namedItems ??= new Dictionary<string, object>();
+
+        foreach (var obj in namedItems)
+        {
+            SUCCESS(languageEngine.AddNamedItem(obj.Key, (uint)(ScriptItem.IsVisible | ScriptItem.IsSource)));
+            (scriptSite as ScriptSite).NamedItems.Add(obj.Key, obj.Value);
+        }
+
         SUCCESS(parser.ParseScriptText(scriptText, null, null, null, 0, 0, (uint)flags, out var result, null), throwException: true);
-        // System.Console.WriteLine("ParseScriptText finished " + myObj.Name);
         return result;
     }
 
@@ -229,7 +250,7 @@ public class VbsDebuggerBase : IDisposable
             rda.ConnectDebugger(applicationDebugger);
             // rda.GetRootNode(out var dan);
             // dan.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out var name1);
-            
+
             //rda.CauseBreak();
             connected = true;
 

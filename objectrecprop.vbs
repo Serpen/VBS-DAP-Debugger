@@ -1,7 +1,7 @@
 
-dim fso
-dim zahl
 dim obj
+dim zahl
+dim fso
 
 zahl = 4
 set fso = CreateObject("Scripting.FileSystemObject")
@@ -12,7 +12,9 @@ Stop
 Class objectrecprop
 
     Private Sub Class_Initialize()
-        
+        arr = Array(5)
+        myprivate = 12
+        m_PropertyName = 18
     End Sub
 
     Private Sub Class_Terminate()
@@ -25,6 +27,17 @@ Class objectrecprop
     Public Property Let PropertyName(Value)
         m_PropertyName = Value
     End Property
+
+    private myprivate
+
+    public [SpecialName]
+
+    ' public const RAD1 = 12
+
+    public arr 
+
+
+
 
 
 End Class ' objectrecprop

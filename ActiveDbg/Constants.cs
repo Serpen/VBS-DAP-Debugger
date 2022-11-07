@@ -1,7 +1,7 @@
 ﻿namespace ActiveDbg
 {
     [Flags]
-    public enum enum_DBGPROP_ATTRIB_FLAGS : uint
+    public enum DBGPROP_ATTRIB_FLAGS : uint
     {
         //DBGPROP_ATTRIB_NO_ATTRIB = 0x0u,
         //DBGPROP_ATTRIB_VALUE_IS_INVALID = 0x8u,
@@ -28,11 +28,11 @@
         VALUE_IS_OBJECT = 0x10,
         VALUE_IS_ENUM = 0x20,
         VALUE_IS_CUSTOM = 0x40,
-        OBJECT_IS_EXPANDABLE = 0x70,
+        // OBJECT_IS_EXPANDABLE = 0x70,
         VALUE_HAS_CODE = 0x80,
         TYPE_IS_OBJECT = 0x100,
+        // TYPE_IS_EXPANDABLE = 0x100,
         TYPE_HAS_CODE = 0x200,
-        TYPE_IS_EXPANDABLE = 0x100,
         SLOT_IS_CATEGORY = 0x400,
         VALUE_READONLY = 0x800,
         ACCESS_PUBLIC = 0x1000,
@@ -58,7 +58,7 @@
     }
 
     [Flags]
-    public enum enum_DEBUGPROP_INFO_FLAGS : uint
+    public enum DebugPopertyInfoFlags : uint
     {
         //DEBUGPROP_INFO_FULLNAME = 0x1u,
         //DEBUGPROP_INFO_NAME = 0x2u,
@@ -77,10 +77,11 @@
         PROP_INFO_NAME = 0x1,
         PROP_INFO_TYPE = 0x2,
         PROP_INFO_VALUE = 0x4,
-        PROP_INFO_FULLNAME = 0x20,
         PROP_INFO_ATTRIBUTES = 0x8,
         PROP_INFO_DEBUGPROP = 0x10,
-        PROP_INFO_AUTOEXPAND = 0x8000000,
+        PROP_INFO_FULLNAME = 0x20,
+        RAW = 0x2000000,
+        // PROP_INFO_AUTOEXPAND = 0x8000000,
         // PROP_INFO_STANDARD = (PROP_INFO_NAME | PROP_INFO_TYPE | PROP_INFO_VALUE | PROP_INFO_ATTRIBUTES)
     }
 
@@ -90,12 +91,17 @@
     internal enum ScriptItem : uint
     {
         None = 0,
+        Unkown1 = 1,
         IsVisible = 2,
         IsSource = 4,
         GlobalMembers = 8,
-        IsPersistent = 64, // 0x00000040
-        CodeOnly = 512, // 0x00000200
-        NoCode = 1024, // 0x00000400
+        Unknown0x10 = 0x10,
+        Unknown0x20 = 0x20,
+        IsPersistent = 0x40, // 0x00000040
+        Unknown0x80 = 0x80,
+        Unknown0x100 = 0x100,
+        CodeOnly = 0x200, // 0x00000200
+        NoCode = 0x400, // 0x00000400
     }
 
     internal static class EnumPropertyTypes
@@ -113,17 +119,22 @@
         None = 0,
         DelayExecution = 1,
         IsVisible = 2,
-        IsExpression = 32, // 0x00000020
-        IsPersistent = 64, // 0x00000040
-        HostManageSource = 128, // 0x00000080
-        SCRIPTTEXT_ISXDOMAIN = 0x00000100,
-        SCRIPTTEXT_ISNONUSERCODE = 0x00000200,
+        Unknown4 = 4,
+        Unknown8 = 8,
+        Unknown16 = 0x10,
+        IsExpression = 0x20,
+        IsPersistent = 0x40,
+        HostManageSource = 0x80,
+        SCRIPTTEXT_ISXDOMAIN = 0x100,
+        SCRIPTTEXT_ISNONUSERCODE = 0x200,
     }
 
     public enum TEXT_DOC_ATTR : uint
     {
         TEXT_DOC_ATTR_READONLY = 1,
-        UNKOWN2 = 2, // IE
+        TEXT_DOC_ATTR_TYPE_PRIMARY = 0x2, // IE?
+        TEXT_DOC_ATTR_TYPE_WORKER = 0x4,
+        TEXT_DOC_ATTR_TYPE_SCRIPT = 0x8,
     }
 
     /*
@@ -142,5 +153,21 @@
                                            SCRIPTTEXT_ISXDOMAIN | \
                                            SCRIPTTEXT_ISNONUSERCODE)
     */
+
+    public enum Properties
+    {
+        SCRIPTPROP_MAJORVERSION  = 1,
+        SCRIPTPROP_MINORVERSION  = 2,
+        SCRIPTPROP_BUILDNUMBER  = 3,
+        SCRIPTPROP_DELAYEDEVENTSINKING  = 0x1000,
+        SCRIPTPROP_CATCHEXCEPTION  = 4097,
+        SCRIPTPROP_CONVERSIONLCID  = 4098,
+        SCRIPTPROP_HOSTSTACKREQUIRED  = 4099,
+        SCRIPTPROP_SCRIPTSAREFULLYTRUSTED  = 0x1004, // false
+        SCRIPTPROP_INTEGERMODE = 0x3000,
+        Unknown61440 = 0xF000,
+        SCRIPTPROP_HACK_FIBERSUPPORT  = 0x70000000,
+        SCRIPTPROP_HACK_TRIDENTEVENTSINK  = 0x70000001
+    }
 
 }
