@@ -2,8 +2,10 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using ActiveDbg;
 using static Helpers;
 using Marshal = System.Runtime.InteropServices.Marshal;
+using DAP = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
+using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol.Messages;
 
-public class VbsDebuggerBase : IDisposable
+public class VbsDebuggerBase : DAP.DebugAdapterBase, IDisposable
 {
 
     static internal IProcessDebugManager64 pdm64;
@@ -45,6 +47,7 @@ public class VbsDebuggerBase : IDisposable
     }
     public VbsDebuggerBase()
     {
+        System.Diagnostics.Debug.WriteLine("x_ VbsDebuggerBase");
         //SUCCESS(m_processDebugManager.GetDefaultApplication(out var m_debugApplication));
         if (pdm64 is not null)
         {
@@ -52,10 +55,10 @@ public class VbsDebuggerBase : IDisposable
             ArgumentNullException.ThrowIfNull(debugApplication64);
             SUCCESS(debugApplication64.SetName(nameof(VbsDebuggerBase)));
             SUCCESS(pdm64.AddApplication(debugApplication64, out var cookie));
-            applicationDebugger = new Debugger();
+            applicationDebugger = new Debugger(this);
             var debugSessionProvider = applicationDebugger as IDebugSessionProvider ?? throw new Exception($"no {nameof(IDebugSessionProvider)}");
             SUCCESS(debugSessionProvider.StartDebugSession(debugApplication64));
-            scriptSite = new ScriptSite(debugApplication64) ?? throw new Exception($"no {nameof(IActiveScriptSite)}");
+            scriptSite = new ScriptSite(debugApplication64, this) ?? throw new Exception($"no {nameof(IActiveScriptSite)}");
         }
         else
         {
@@ -63,11 +66,19 @@ public class VbsDebuggerBase : IDisposable
             ArgumentNullException.ThrowIfNull(debugApplication32);
             SUCCESS(debugApplication32.SetName(nameof(VbsDebuggerBase)));
             SUCCESS(pdm32.AddApplication(debugApplication32, out var cookie));
-            applicationDebugger = new Debugger();
+            applicationDebugger = new Debugger(this);
             var debugSessionProvider = applicationDebugger as IDebugSessionProvider ?? throw new Exception($"no {nameof(IDebugSessionProvider)}");
             SUCCESS(debugSessionProvider.StartDebugSession(debugApplication32));
-            scriptSite = new ScriptSite(debugApplication32) ?? throw new Exception($"no {nameof(IActiveScriptSite)}");
+            scriptSite = new ScriptSite(debugApplication32, this) ?? throw new Exception($"no {nameof(IActiveScriptSite)}");
         }
+
+        System.Threading.Thread.Sleep(1000);
+
+        System.Diagnostics.Debug.WriteLine("x_ VbsDebuggerBase InitializeProtocolClient");
+
+        InitializeProtocolClient(System.Console.OpenStandardInput(), System.Console.OpenStandardOutput());
+
+        System.Diagnostics.Debug.WriteLine("x_ VbsDebuggerBase end");
 
         // border for -> Parse
     }
@@ -306,5 +317,222 @@ public class VbsDebuggerBase : IDisposable
 
 
     }
+
+    #region Events
+    protected override InitializeResponse HandleInitializeRequest(InitializeArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ InitializeResponse");
+        this.Protocol.SendEvent(new InitializedEvent());
+
+        System.Threading.Thread.Sleep(1000);
+
+        arguments.LinesStartAt1 = false;
+
+        return new InitializeResponse()
+        {
+            SupportsConfigurationDoneRequest = true,
+            SupportsTerminateRequest = true,
+            SupportSuspendDebuggee = true,
+            SupportsDebuggerProperties = true,
+            SupportsFunctionBreakpoints = true,
+            SupportsInstructionBreakpoints = true,
+            SupportsCancelRequest = true,
+            SupportsExceptionInfoRequest = true,
+
+        };
+    }
+
+    protected override DisconnectResponse HandleDisconnectRequest(DisconnectArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ HandleDisconnectRequest");
+        debugApplication32?.DisconnectDebugger();
+        debugApplication64?.DisconnectDebugger();
+        SUCCESS(languageEngine.Close());
+        return base.HandleDisconnectRequest(arguments);
+    }
+
+    System.Threading.Thread goThread;
+
+    protected override DAP.Messages.LaunchResponse HandleLaunchRequest(DAP.Messages.LaunchArguments args)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ HandleLaunchRequest");
+        var fileName = ((string)args.ConfigurationProperties.GetValueOrDefault("program"));
+        var text = System.IO.File.ReadAllText(fileName);
+        goThread = new System.Threading.Thread(new ParameterizedThreadStart(Go));
+        System.Diagnostics.Debug.WriteLine("x_ HandleLaunchRequest 1");
+        goThread.Start(text);
+        System.Diagnostics.Debug.WriteLine("x_ HandleLaunchRequest 2");
+
+        return new LaunchResponse();
+    }
+
+    private void Go(object? obj)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ Go");
+        if (obj is string text)
+            this.Parse(text);
+
+        this.Protocol.SendEvent(new ExitedEvent());
+        this.Protocol.SendEvent(new TerminatedEvent());
+    }
+
+    protected override TerminateResponse HandleTerminateRequest(TerminateArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ HandleTerminateRequest");
+        System.Environment.Exit(0);
+        return new TerminateResponse();
+    }
+
+    protected override ConfigurationDoneResponse HandleConfigurationDoneRequest(ConfigurationDoneArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ HandleConfigurationDoneRequest");
+        return new ConfigurationDoneResponse();
+    }
+
+
+    protected override SetBreakpointsResponse HandleSetBreakpointsRequest(SetBreakpointsArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ SetBreakpointsResponse");
+        return new SetBreakpointsResponse(new List<Breakpoint>() { new Breakpoint() });
+    }
+
+    protected override void HandleProtocolError(Exception ex)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleProtocolError {ex}");
+        base.HandleProtocolError(ex);
+    }
+
+    protected override SetFunctionBreakpointsResponse HandleSetFunctionBreakpointsRequest(SetFunctionBreakpointsArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ HandleSetFunctionBreakpointsRequest");
+        return new SetFunctionBreakpointsResponse();
+        return base.HandleSetFunctionBreakpointsRequest(arguments);
+    }
+
+    protected override SetInstructionBreakpointsResponse HandleSetInstructionBreakpointsRequest(SetInstructionBreakpointsArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ HandleSetInstructionBreakpointsRequest");
+        var setInstructionBreakpointsResponse = new SetInstructionBreakpointsResponse();
+
+        return setInstructionBreakpointsResponse;
+        return base.HandleSetInstructionBreakpointsRequest(arguments);
+    }
+
+    protected override ThreadsResponse HandleThreadsRequest(ThreadsArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleThreadsRequest {arguments}");
+        var threadsResponse = new ThreadsResponse();
+        threadsResponse.Threads.Add(new DAP.Messages.Thread(1, $"{goThread.ManagedThreadId} {goThread.Name}"));
+        // threadsResponse.Threads.Add(new DAP.Messages.Thread(2, "dummy"));
+        System.Diagnostics.Debug.WriteLine($"x_ HandleThreadsRequest {threadsResponse}");
+        return threadsResponse;
+    }
+
+
+    protected override StackTraceResponse HandleStackTraceRequest(StackTraceArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine("x_ HandleStackTraceRequest");
+        var str = new StackTraceResponse();
+        foreach (var sf in StackFrame.GetFrames(DebugThread))
+        {
+            str.StackFrames.Add(new DAP.Messages.StackFrame(1, sf.Name, ((int)sf.Line + 1), 1));
+        }
+        str.TotalFrames = str.StackFrames.Count;
+        return str;
+    }
+
+    protected override VariablesResponse HandleVariablesRequest(VariablesArguments args)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ VariablesArguments {args.VariablesReference}");
+        var ret = new VariablesResponse();
+        int i = 2;
+        if (args.VariablesReference > 1) return ret;
+        foreach (var v in Variable.getVariables(this.DebugThread))
+        {
+            ret.Variables.Add(new DAP.Messages.Variable(
+                v.Name, v.Value, v.Members.Count() > 0 ? i++ : 0
+            ));
+            if (i == args.VariablesReference)
+            {
+                ret.Variables.Clear();
+                foreach (var v2 in v.Members)
+                {
+                    ret.Variables.Add(new DAP.Messages.Variable(v2.Name, v2.Value, 0));
+                }
+                return ret;
+            }
+        }
+        return ret;
+    }
+
+    protected override ScopesResponse HandleScopesRequest(ScopesArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleScopesRequest");
+
+        return new ScopesResponse(new List<Scope>() { new Scope("Globals", 1, false) });
+    }
+
+    protected override ContinueResponse HandleContinueRequest(ContinueArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleContinueRequest");
+        this.Resume();
+        return new ContinueResponse();
+    }
+
+    protected override NextResponse HandleNextRequest(NextArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleStepInRequest");
+        this.Resume(BREAKRESUMEACTION.BREAKRESUMEACTION_STEP_OVER);
+        return new NextResponse();
+    }
+
+    protected override StepInResponse HandleStepInRequest(StepInArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleStepInRequest");
+        this.Resume(BREAKRESUMEACTION.BREAKRESUMEACTION_STEP_INTO);
+        return new StepInResponse();
+    }
+
+    protected override StepOutResponse HandleStepOutRequest(StepOutArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleStepOutRequest");
+        this.Resume(BREAKRESUMEACTION.BREAKRESUMEACTION_STEP_OUT);
+        return new StepOutResponse();
+    }
+
+    protected override CancelResponse HandleCancelRequest(CancelArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleCancelRequest");
+        this.Resume(BREAKRESUMEACTION.BREAKRESUMEACTION_ABORT);
+        return new CancelResponse();
+    }
+
+    protected override PauseResponse HandlePauseRequest(PauseArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandlePauseRequest");
+        this.debugApplication32?.CauseBreak();
+        this.debugApplication64?.CauseBreak();
+        return new PauseResponse();
+    }
+
+    protected override BreakpointLocationsResponse HandleBreakpointLocationsRequest(BreakpointLocationsArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleBreakpointLocationsRequest");
+        return base.HandleBreakpointLocationsRequest(arguments);
+    }
+
+    protected override ExceptionInfoResponse HandleExceptionInfoRequest(ExceptionInfoArguments arguments)
+    {
+        System.Diagnostics.Debug.WriteLine($"x_ HandleExceptionInfoRequest");
+        return new ExceptionInfoResponse()
+        {
+            Description = this.applicationDebugger.exp[0].bstrDescription,
+            Code = this.applicationDebugger.exp[0].wCode,
+        };
+        
+    }
+
+
+    #endregion
 
 }

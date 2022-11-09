@@ -1,91 +1,107 @@
-﻿class Program
+﻿using DI = Microsoft.VisualStudio.Debugger.Interop;
+
+
+class Program
 {
     internal static VbsDebuggerBase vbsbase;
+
+    static object logfile;
 
     static System.IO.StreamReader Reader;
     static System.IO.StreamWriter Writer;
 
     static void Main(string[] args)
     {
-        System.Console.WriteLine("x");
-        if (args.Length == 0)
-            args = new String[] { ".\\objectrecprop.vbs" };
-
+        // throw new ApplicationException("myappx");
+        System.Diagnostics.Debug.WriteLine("start program1");
         vbsbase = new VbsDebuggerBase();
-
-        Thread? th = null;
-
-        if (false)
+        if (args.Length == 1 && args[0] == "-dap")
         {
-            foreach (var proc in VbsDebuggerBase.GetScriptProcesses())
-            {
-                // th = new Thread(new ParameterizedThreadStart(Attach));
-                // th.Start(proc);
-                Attach(proc);
-                break;
-            }
+            vbsbase.Protocol.Run();
         }
         else
         {
-            th = new Thread(new ParameterizedThreadStart(Go));
-            th.Start(System.IO.File.ReadAllText(args[0]));
-        }
+            if (args.Length == 0)
+                args = new String[] { ".\\sample.vbs" };
 
-        // var pipeServer = new System.IO.Pipes.NamedPipeServerStream("Serpen.vbsdebugger", System.IO.Pipes.PipeDirection.InOut, 1, System.IO.Pipes.PipeTransmissionMode.Message, System.IO.Pipes.PipeOptions.None);
-        // Reader = new StreamReader(pipeServer);
-        // Writer = new StreamWriter(pipeServer);
 
-        Reader = new StreamReader(System.Console.OpenStandardInput());
-        Writer = new StreamWriter(System.Console.OpenStandardOutput()) { AutoFlush = true };
+            Thread? th = null;
 
-        string choice;
-        do
-        {
-            System.Threading.Thread.Sleep(2000);
-            Writer.Write("Action (B/S/V/R/Q): ");
-            choice = Reader.ReadLine()?.ToUpper() ?? "";
-            if (choice == "R")
+            if (false)
             {
-                // var resThread = new Thread(new ThreadStart(resume));
-                // resThread.Start();
-                resume();
-            }
-            else if (choice == "F" | choice == "S")
-            {
-                foreach (var sf in StackFrame.GetFrames(vbsbase.DebugThread))
-                    Writer.WriteLine(sf);
-            }
-            else if (choice == "V")
-            {
-                foreach (var v in Variable.getVariables(vbsbase.DebugThread))
+                foreach (var proc in VbsDebuggerBase.GetScriptProcesses())
                 {
-                    Writer.WriteLine(v);
-                    foreach (var mem in v.Members)
+                    // th = new Thread(new ParameterizedThreadStart(Attach));
+                    // th.Start(proc);
+                    Attach(proc);
+                    break;
+                }
+            }
+            else
+            {
+                th = new Thread(new ParameterizedThreadStart(Go));
+                th.Start(System.IO.File.ReadAllText(args[0]));
+            }
+
+            // var pipeServer = new System.IO.Pipes.NamedPipeServerStream("Serpen.vbsdebugger", System.IO.Pipes.PipeDirection.InOut, 1, System.IO.Pipes.PipeTransmissionMode.Message, System.IO.Pipes.PipeOptions.None);
+            // Reader = new StreamReader(pipeServer);
+            // Writer = new StreamWriter(pipeServer);
+
+            Reader = new StreamReader(System.Console.OpenStandardInput());
+            Writer = new StreamWriter(System.Console.OpenStandardOutput()) { AutoFlush = true };
+
+            string choice;
+            do
+            {
+                System.Threading.Thread.Sleep(2000);
+                Writer.Write("Action (B/S/V/R/Q): ");
+                choice = Reader.ReadLine()?.ToUpper() ?? "";
+                if (choice == "R")
+                {
+                    // var resThread = new Thread(new ThreadStart(resume));
+                    // resThread.Start();
+                    resume();
+                }
+                else if (choice == "F" | choice == "S")
+                {
+                    foreach (var sf in StackFrame.GetFrames(vbsbase.DebugThread))
+                        Writer.WriteLine(sf);
+                }
+                else if (choice == "V")
+                {
+                    foreach (var v in Variable.getVariables(vbsbase.DebugThread))
                     {
-                        Writer.WriteLine(" ." + mem);
-                        foreach (var mem2 in mem.Members)
+                        Writer.WriteLine(v);
+                        foreach (var mem in v.Members)
                         {
-                            Writer.WriteLine("  ." + mem2);
+                            Writer.WriteLine(" ." + mem);
+                            foreach (var mem2 in mem.Members)
+                            {
+                                Writer.WriteLine("  ." + mem2);
+                            }
                         }
                     }
                 }
-            }
-            else if (choice == "B")
-            {
-                System.Console.Write("Breakpoint-Line: ");
-                if (System.UInt32.TryParse(Reader.ReadLine(), out var line))
-                    vbsbase.setBreakPoint(line);
-            }
-        } while (choice != "" && choice != "Q");
-        try
-        {
-            vbsbase.DebugThread?.Resume(out uint _);
-            th?.Interrupt();
-            th?.Abort();
-        }
-        catch
-        {
+                else if (choice == "B")
+                {
+                    vbsbase.debugApplication32?.CauseBreak();
+                    vbsbase.debugApplication64?.CauseBreak();
+                }
+                else if (choice == "T")
+                {
 
+                }
+            } while (choice != "" && choice != "Q");
+            try
+            {
+                vbsbase.DebugThread?.Resume(out uint _);
+                th?.Interrupt();
+                th?.Abort();
+            }
+            catch
+            {
+
+            }
         }
     }
 

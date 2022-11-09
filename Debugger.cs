@@ -1,11 +1,18 @@
 using Microsoft.VisualStudio.Debugger.Interop;
 using System.Runtime.InteropServices;
 using static Helpers;
+using DAP = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 
 public delegate void CloseHandler();
 
 class Debugger : IApplicationDebugger, IDebugSessionProvider
 {
+    DAP.DebugAdapterBase Dap;
+
+    public Debugger(DAP.DebugAdapterBase dap)
+    {
+        this.Dap = dap;
+    }
     public int QueryAlive()
     {
         System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(QueryAlive)}");
@@ -45,15 +52,22 @@ class Debugger : IApplicationDebugger, IDebugSessionProvider
         return SUCCESS(pda.ConnectDebugger(this));
     }
 
+    internal StackFrame sf1;
+    internal BREAKREASON lastbr;
+
+    internal stdole.EXCEPINFO[] exp;
+
     public int onHandleBreakPoint(IRemoteDebugApplicationThread prpt, BREAKREASON br, IActiveScriptErrorDebug pError)
     {
         System.Diagnostics.Debug.WriteLine($"{nameof(Debugger)}.{nameof(onHandleBreakPoint)}");
+        lastbr = br;
+
 
         Program.vbsbase.DebugThread = prpt;
 
         SUCCESS(prpt.GetDescription(out var des, out var state));
 
-        var sf1 = StackFrame.GetFrames(prpt, true).First();
+        sf1 = StackFrame.GetFrames(prpt, true).First();
 
         SUCCESS(sf1.dsf.GetCodeContext(out var debugCodeContext));
 
@@ -78,13 +92,28 @@ class Debugger : IApplicationDebugger, IDebugSessionProvider
         }
         catch (Exception) { }
 
-        Console.WriteLine($":{line + 1},{charoffset + 1} {br} {des} {state} ");
+        System.Diagnostics.Debug.WriteLine($":{line + 1},{charoffset + 1} {br} {des} {state} ");
         if (br == BREAKREASON.BREAKREASON_ERROR)
         {
-            var exp = new stdole.EXCEPINFO[1];
+            exp = new stdole.EXCEPINFO[1];
             pError.GetExceptionInfo(exp);
-            System.Console.WriteLine($"{exp[0].bstrSource}: {exp[0].bstrDescription} &H{exp[0].scode.ToString("X")}");
+            System.Diagnostics.Debug.WriteLine($"{exp[0].bstrSource}: {exp[0].bstrDescription} &H{exp[0].scode.ToString("X")}");
+            this.Dap.Protocol.SendEvent(new DAP.Messages.StoppedEvent()
+            {
+                Reason = DAP.Messages.StoppedEvent.ReasonValue.Exception,
+                ThreadId = 1,
+                Text = $"{exp[0].bstrSource}: {exp[0].bstrDescription} &H{exp[0].scode.ToString("X")}"
+            });
         }
+        else
+        {
+            this.Dap.Protocol.SendEvent(new DAP.Messages.StoppedEvent()
+            {
+                Reason = DAP.Messages.StoppedEvent.ReasonValue.InstructionBreakpoint,
+                ThreadId = 1
+            });
+        }
+
 
         return S_OK;
     }

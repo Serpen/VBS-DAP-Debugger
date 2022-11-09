@@ -1,12 +1,24 @@
 using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 using static Helpers;
+using DAP = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 
 class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IActiveScriptSiteDebug32, IActiveScriptSiteWindow
 {
-    public ScriptSite(IDebugApplication64 debugApplication) => m_debugApplication64 = debugApplication;
-    public ScriptSite(IDebugApplication32 debugApplication) => m_debugApplication32 = debugApplication;
+    public ScriptSite(IDebugApplication64 debugApplication, DAP.DebugAdapterBase dap)
+    {
+        m_debugApplication64 = debugApplication;
+        this.dap = dap;
+    }
+
+    public ScriptSite(IDebugApplication32 debugApplication, DAP.DebugAdapterBase dap)
+    {
+        m_debugApplication32 = debugApplication;
+        this.dap = dap;
+    }
 
     internal readonly IDebugApplication64 m_debugApplication64;
+    private readonly DebugAdapterBase dap;
     internal readonly IDebugApplication32 m_debugApplication32;
 
     public int GetDocVersionString(out string version)
@@ -49,6 +61,7 @@ class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IAct
 
     public int OnLeaveScript()
     {
+        this.dap.Protocol.SendEvent(new DAP.Messages.ExitedEvent());
         System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}.{nameof(OnLeaveScript)}");
         return S_OK;
     }
