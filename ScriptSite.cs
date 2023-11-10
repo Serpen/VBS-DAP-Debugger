@@ -5,21 +5,23 @@ using DAP = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 
 class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IActiveScriptSiteDebug32, IActiveScriptSiteWindow
 {
-    public ScriptSite(IDebugApplication64 debugApplication, DAP.DebugAdapterBase dap)
+    readonly IDebugApplication64 m_debugApplication64;
+    readonly DebugAdapterBase dap;
+    readonly IDebugApplication32 m_debugApplication32;
+    internal Dictionary<string, object> NamedItems { get; } = new Dictionary<string, object>();
+    const uint TYPE_E_ELEMENTNOTFOUND = 0x8002802B;
+
+    internal ScriptSite(IDebugApplication64 debugApplication, DAP.DebugAdapterBase dap)
     {
         m_debugApplication64 = debugApplication;
         this.dap = dap;
     }
 
-    public ScriptSite(IDebugApplication32 debugApplication, DAP.DebugAdapterBase dap)
+    internal ScriptSite(IDebugApplication32 debugApplication, DAP.DebugAdapterBase dap)
     {
         m_debugApplication32 = debugApplication;
         this.dap = dap;
     }
-
-    internal readonly IDebugApplication64 m_debugApplication64;
-    private readonly DebugAdapterBase dap;
-    internal readonly IDebugApplication32 m_debugApplication32;
 
     public int GetDocVersionString(out string version)
     {
@@ -28,9 +30,6 @@ class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IAct
         return S_OK;
     }
 
-    internal Dictionary<string, object> NamedItems { get; } = new Dictionary<string, object>();
-
-    const uint TYPE_E_ELEMENTNOTFOUND = 0x8002802B;
     public uint GetItemInfo(string pstrName, uint dwReturnMask, out object ppiunkItem, IntPtr ppti)
     {
         System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}.{nameof(GetItemInfo)} {pstrName} {dwReturnMask}");
@@ -61,14 +60,16 @@ class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IAct
 
     public int OnLeaveScript()
     {
-        this.dap.Protocol.SendEvent(new DAP.Messages.ExitedEvent());
+        if (Program.isDAP) this.dap.Protocol.SendEvent(new DAP.Messages.ExitedEvent());
         System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}.{nameof(OnLeaveScript)}");
         return S_OK;
     }
 
     public int OnScriptError(IActiveScriptError scriptError)
     {
-        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}.{nameof(OnScriptError)} {scriptError}");
+        stdole.EXCEPINFO[] expinf = new stdole.EXCEPINFO[1];
+        scriptError.GetExceptionInfo(expinf);
+        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}.{nameof(OnScriptError)} {scriptError} {expinf[0].bstrDescription} {expinf[0].bstrSource} {expinf[0].scode.ToString("X")}");
         return 0;
     }
 
@@ -96,13 +97,13 @@ class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IAct
 
     int IActiveScriptSiteDebug32.GetApplication(out IDebugApplication32 ppda)
     {
-        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}32.{nameof(IActiveScriptSiteDebug32.GetApplication)}");
+        DebugWriteMethodeName();
         ppda = m_debugApplication32;
         return S_OK;
     }
     int IActiveScriptSiteDebug64.GetApplication(out IDebugApplication64 ppda)
     {
-        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}64.{nameof(IActiveScriptSiteDebug64.GetApplication)}");
+        DebugWriteMethodeName();
         ppda = m_debugApplication64;
         return S_OK;
     }
@@ -111,20 +112,20 @@ class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IAct
     {
         SUCCESS(m_debugApplication64.GetRootNode(out ppdanRoot));
         SUCCESS(ppdanRoot.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out var title));
-        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}64.{nameof(IActiveScriptSiteDebug64.GetRootApplicationNode)} {title}");
+        DebugWriteMethodeName();
         return 0x8004001;
     }
     int IActiveScriptSiteDebug32.GetRootApplicationNode(out IDebugApplicationNode ppdanRoot)
     {
         SUCCESS(m_debugApplication32.GetRootNode(out ppdanRoot));
         SUCCESS(ppdanRoot.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out var title));
-        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}32.{nameof(IActiveScriptSiteDebug32.GetRootApplicationNode)} {title}");
+        DebugWriteMethodeName();
         return 0x8004001;
     }
 
     public int OnScriptErrorDebug(IActiveScriptErrorDebug pErrorDebug, out int pfEnterDebugger, out int pfCallOnScriptErrorWhenContinuing)
     {
-        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}.{nameof(OnScriptErrorDebug)} {pErrorDebug}");
+        DebugWriteMethodeName();
         pfEnterDebugger = 0;
         pfCallOnScriptErrorWhenContinuing = 1;
         return S_OK;

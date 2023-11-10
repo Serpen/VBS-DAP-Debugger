@@ -3,53 +3,59 @@
 
 class Program
 {
-    internal static VbsDebuggerBase vbsbase;
+    internal static VbsDebugAdapter vbsbase;
+    static System.IO.StreamReader Reader = new StreamReader(System.Console.OpenStandardInput());
+    static System.IO.StreamWriter Writer = new StreamWriter(System.Console.OpenStandardOutput()) { AutoFlush = true };
 
-    static object logfile;
+    public static bool isDAP = false;
 
-    static System.IO.StreamReader Reader;
-    static System.IO.StreamWriter Writer;
+    static Thread th = null;
 
     static void Main(string[] args)
     {
         // throw new ApplicationException("myappx");
         System.Diagnostics.Debug.WriteLine("start program1");
-        vbsbase = new VbsDebuggerBase();
+        vbsbase = new VbsDebugAdapter();
+
         if (args.Length == 1 && args[0] == "-dap")
         {
+            Program.isDAP = true;
             vbsbase.Protocol.Run();
+        }
+        else if (args.Length == 1 && args[0] == "-wait")
+        {
+            var pi = new System.Diagnostics.ProcessStartInfo("C:\\windows\\system32\\cscript.exe", "//D attach.vbs"); // { WorkingDirectory = "D:\\vs_proj\\VBS-DAP-Debugger\\" };
+            vbsbase.Wait(pi);
+        }
+        else if (args.Length == 1 && args[0] == "-attach")
+        {
+            foreach (var proc in VbsDebugAdapter.GetScriptProcesses())
+            {
+                th = new Thread(new ParameterizedThreadStart(Attach));
+                th.Start(proc);
+                //Attach(proc);
+                break;
+            }
         }
         else
         {
             if (args.Length == 0)
-                args = new String[] { ".\\sample.vbs" };
+                args = new String[] { @"D:\Temp\vbscript-files\_allSyntax.vbs" };
 
 
-            Thread? th = null;
 
-            if (false)
-            {
-                foreach (var proc in VbsDebuggerBase.GetScriptProcesses())
-                {
-                    // th = new Thread(new ParameterizedThreadStart(Attach));
-                    // th.Start(proc);
-                    Attach(proc);
-                    break;
-                }
-            }
-            else
-            {
-                th = new Thread(new ParameterizedThreadStart(Go));
-                th.Start(System.IO.File.ReadAllText(args[0]));
-            }
 
-            // var pipeServer = new System.IO.Pipes.NamedPipeServerStream("Serpen.vbsdebugger", System.IO.Pipes.PipeDirection.InOut, 1, System.IO.Pipes.PipeTransmissionMode.Message, System.IO.Pipes.PipeOptions.None);
-            // Reader = new StreamReader(pipeServer);
-            // Writer = new StreamWriter(pipeServer);
+            th = new Thread(new ParameterizedThreadStart(Go));
+            th.Start(System.IO.File.ReadAllText(args[0]));
+        }
 
-            Reader = new StreamReader(System.Console.OpenStandardInput());
-            Writer = new StreamWriter(System.Console.OpenStandardOutput()) { AutoFlush = true };
 
+        // var pipeServer = new System.IO.Pipes.NamedPipeServerStream("Serpen.vbsdebugger", System.IO.Pipes.PipeDirection.InOut, 1, System.IO.Pipes.PipeTransmissionMode.Message, System.IO.Pipes.PipeOptions.None);
+        // Reader = new StreamReader(pipeServer);
+        // Writer = new StreamWriter(pipeServer);
+
+        if (true || vbsbase.DebugThread != null)
+        {
             string choice;
             do
             {
@@ -84,8 +90,7 @@ class Program
                 }
                 else if (choice == "B")
                 {
-                    vbsbase.debugApplication32?.CauseBreak();
-                    vbsbase.debugApplication64?.CauseBreak();
+                    vbsbase.CauseBreak();
                 }
                 else if (choice == "T")
                 {
@@ -103,14 +108,16 @@ class Program
 
             }
         }
+
     }
+
 
     static void resume()
     {
         vbsbase.Resume();
     }
 
-    static void Go(object? obj)
+    static void Go(object obj)
     {
         if (obj is string text)
             vbsbase.Parse(text);
@@ -118,7 +125,7 @@ class Program
 
     }
 
-    static void Attach(object? obj)
+    static void Attach(object obj)
     {
         vbsbase.Attach(obj as System.Diagnostics.Process);
     }

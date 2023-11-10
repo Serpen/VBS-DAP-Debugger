@@ -3,6 +3,11 @@ using static Helpers;
 
 public class StackFrame
 {
+    internal readonly IDebugStackFrame dsf;
+    readonly ulong stackStart;
+
+    IDebugDocument debugDocument;
+
     public static IEnumerable<StackFrame> GetFrames(IRemoteDebugApplicationThread prpt, bool firstOnly = false)
     {
         SUCCESS(prpt.EnumStackFrames(out var enumDebugStackFrames32));
@@ -11,8 +16,10 @@ public class StackFrame
 
         if (enumDebugStackFrames64 is not null)
             return GetFrames64(enumDebugStackFrames64, firstOnly);
-        else
+        else if (enumDebugStackFrames32 is not null)
             return GetFrames32(enumDebugStackFrames32, firstOnly);
+        else
+            return Array.Empty<StackFrame>();
     }
 
     static IEnumerable<StackFrame> GetFrames32(IEnumDebugStackFrames enumDebugStackFrames, bool firstOnly = false)
@@ -45,7 +52,7 @@ public class StackFrame
         uint fetched = 0;
         do
         {
-            SUCCESS(enumDebugStackFrames.Next64(1, dsfd, out fetched));
+            SUCCESS(enumDebugStackFrames.Next64(1, dsfd, out fetched), ignores: 1);
 
             if (fetched == 1)
                 retList.Add(new StackFrame(dsfd[0]));
@@ -53,12 +60,6 @@ public class StackFrame
         } while (fetched > 0 && !firstOnly);
         return retList;
     }
-
-
-    internal readonly IDebugStackFrame dsf;
-    private readonly ulong stackStart;
-
-    IDebugDocument debugDocument;
 
     public StackFrame(DebugStackFrameDescriptor dsfd)
     {

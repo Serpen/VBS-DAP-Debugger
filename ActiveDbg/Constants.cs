@@ -170,4 +170,21 @@
         SCRIPTPROP_HACK_TRIDENTEVENTSINK  = 0x70000001
     }
 
+    public enum SourceTextAttribute : uint
+    {
+        SPACE = 0,
+        KEYWORD = 1,
+        COMMENT = 2,
+        NONSOURCE = 4,
+        OPERATOR = 8,
+        NUMBER = 0x10,
+        STRING = 0x20,
+        FUNCTION_START = 0x40,
+        u0x80 = 0x80,
+        NAME = 0x100,
+        u0x200 = 0x200,
+        u0x400 = 0x400,
+        u0x4800 = 0x800,
+    }
+
 }
