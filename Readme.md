@@ -1,6 +1,19 @@
+# Early Alpha #
 VBScript Debugger using ActiveDbg, ProcessDebugManager, VSInterop which communicates via Debug Adapter Protocol.
 
 Should by used for VBS-VSCode Extension
+
+## Progress ##
+- Parse aka Execute working
+- Attach working
+- DAP Communication with VSCode
+
+![Hover](poc.png)
+
+## Problems ##
+People who use VBS-VSCode Extension for simply running *.vbs files, get error in the new debugger because I currently only read the textfile and execute it, what i should do is launch cscript, attach to it and have access to WScript, WSH
+That could really break a lot, have some ideas how to fix that, but time...
+
 
 
 ## useful links / references #
