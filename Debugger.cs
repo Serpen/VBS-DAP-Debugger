@@ -1,16 +1,13 @@
-using Microsoft.VisualStudio.Debugger.Interop;
-using System.Runtime.InteropServices;
 using static Helpers;
-using DAP = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 
 public delegate void CloseHandler();
 
-class Debugger : IApplicationDebugger, IDebugSessionProvider
+class Debugger : VSDebug.IApplicationDebugger, VSDebug.IDebugSessionProvider
 {
     readonly VbsDebugAdapter Dap;
 
     StackFrame sf1;
-    BREAKREASON lastbr;
+    VSDebug.BREAKREASON lastbr;
 
     internal stdole.EXCEPINFO[] exp;
 
@@ -52,14 +49,14 @@ class Debugger : IApplicationDebugger, IDebugSessionProvider
         return S_OK;
     }
 
-    public int StartDebugSession(IRemoteDebugApplication pda)
+    public int StartDebugSession(VSDebug.IRemoteDebugApplication pda)
     {
         DebugWriteMethodeName();
         return SUCCESS(pda.ConnectDebugger(this));
     }
 
 
-    public int onHandleBreakPoint(IRemoteDebugApplicationThread prpt, BREAKREASON br, IActiveScriptErrorDebug pError)
+    public int onHandleBreakPoint(VSDebug.IRemoteDebugApplicationThread prpt, VSDebug.BREAKREASON br, VSDebug.IActiveScriptErrorDebug pError)
     {
         DebugWriteMethodeName();
         lastbr = br;
@@ -76,7 +73,7 @@ class Debugger : IApplicationDebugger, IDebugSessionProvider
 
         SUCCESS(debugDocumentContext.GetDocument(out var debugDocument));
 
-        var debugDocumentText = debugDocument as IDebugDocumentText ?? throw new Exception("no IDebugDocumentText");
+        var debugDocumentText = debugDocument as VSDebug.IDebugDocumentText ?? throw new Exception("no IDebugDocumentText");
 
         SUCCESS(debugDocumentText.GetPositionOfContext(debugDocumentContext, out var charpos, out var charnum));
 
@@ -90,7 +87,7 @@ class Debugger : IApplicationDebugger, IDebugSessionProvider
         // Marshal.FreeHGlobal(textPtr);
 
         if (!Program.isDAP) System.Console.WriteLine($":{line + 1},{charoffset + 1} {br} {des} {state} ");
-        if (br == BREAKREASON.BREAKREASON_ERROR)
+        if (br == VSDebug.BREAKREASON.BREAKREASON_ERROR)
         {
             exp = new stdole.EXCEPINFO[1];
             SUCCESS(pError.GetExceptionInfo(exp));

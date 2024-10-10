@@ -1,23 +1,20 @@
-using Microsoft.VisualStudio.Debugger.Interop;
-using Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 using static Helpers;
-using DAP = Microsoft.VisualStudio.Shared.VSCodeDebugProtocol;
 
-class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IActiveScriptSiteDebug32, IActiveScriptSiteWindow
+class ScriptSite : ActiveDbg.IActiveScriptSite, VSDebug.IActiveScriptSiteDebug64, VSDebug.IActiveScriptSiteDebug32, VSDebug.IActiveScriptSiteWindow
 {
-    readonly IDebugApplication64 m_debugApplication64;
-    readonly DebugAdapterBase dap;
-    readonly IDebugApplication32 m_debugApplication32;
+    readonly VSDebug.IDebugApplication64 m_debugApplication64;
+    readonly DAP.DebugAdapterBase dap;
+    readonly VSDebug.IDebugApplication32 m_debugApplication32;
     internal Dictionary<string, object> NamedItems { get; } = new Dictionary<string, object>();
     const uint TYPE_E_ELEMENTNOTFOUND = 0x8002802B;
 
-    internal ScriptSite(IDebugApplication64 debugApplication, DAP.DebugAdapterBase dap)
+    internal ScriptSite(VSDebug.IDebugApplication64 debugApplication, DAP.DebugAdapterBase dap)
     {
         m_debugApplication64 = debugApplication;
         this.dap = dap;
     }
 
-    internal ScriptSite(IDebugApplication32 debugApplication, DAP.DebugAdapterBase dap)
+    internal ScriptSite(VSDebug.IDebugApplication32 debugApplication, DAP.DebugAdapterBase dap)
     {
         m_debugApplication32 = debugApplication;
         this.dap = dap;
@@ -65,7 +62,7 @@ class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IAct
         return S_OK;
     }
 
-    public int OnScriptError(IActiveScriptError scriptError)
+    public int OnScriptError(VSDebug.IActiveScriptError scriptError)
     {
         stdole.EXCEPINFO[] expinf = new stdole.EXCEPINFO[1];
         scriptError.GetExceptionInfo(expinf);
@@ -79,51 +76,51 @@ class ScriptSite : ActiveDbg.IActiveScriptSiteMy, IActiveScriptSiteDebug64, IAct
         return S_OK;
     }
 
-    public int OnStateChange(SCRIPTSTATE scriptState)
+    public int OnStateChange(VSDebug.SCRIPTSTATE scriptState)
     {
         System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}.{nameof(OnStateChange)} {scriptState}");
         return S_OK;
     }
-    int IActiveScriptSiteDebug64.GetDocumentContextFromPosition(ulong dwSourceContext, uint uCharacterOffset, uint uNumChars, out IDebugDocumentContext ppsc)
+    int VSDebug.IActiveScriptSiteDebug64.GetDocumentContextFromPosition(ulong dwSourceContext, uint uCharacterOffset, uint uNumChars, out VSDebug.IDebugDocumentContext ppsc)
     {
-        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}64.{nameof(IActiveScriptSiteDebug64.GetDocumentContextFromPosition)} {dwSourceContext}, {uCharacterOffset} {uNumChars}");
+        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}64.{nameof(VSDebug.IActiveScriptSiteDebug64.GetDocumentContextFromPosition)} {dwSourceContext}, {uCharacterOffset} {uNumChars}");
         throw new NotImplementedException();
     }
-    int IActiveScriptSiteDebug32.GetDocumentContextFromPosition(uint dwSourceContext, uint uCharacterOffset, uint uNumChars, out IDebugDocumentContext ppsc)
+    int VSDebug.IActiveScriptSiteDebug32.GetDocumentContextFromPosition(uint dwSourceContext, uint uCharacterOffset, uint uNumChars, out VSDebug.IDebugDocumentContext ppsc)
     {
-        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}32.{nameof(IActiveScriptSiteDebug32.GetDocumentContextFromPosition)} {dwSourceContext}, {uCharacterOffset} {uNumChars}");
+        System.Diagnostics.Debug.WriteLine($"{nameof(ScriptSite)}32.{nameof(VSDebug.IActiveScriptSiteDebug32.GetDocumentContextFromPosition)} {dwSourceContext}, {uCharacterOffset} {uNumChars}");
         throw new NotImplementedException();
     }
 
-    int IActiveScriptSiteDebug32.GetApplication(out IDebugApplication32 ppda)
+    int VSDebug.IActiveScriptSiteDebug32.GetApplication(out VSDebug.IDebugApplication32 ppda)
     {
         DebugWriteMethodeName();
         ppda = m_debugApplication32;
         return S_OK;
     }
-    int IActiveScriptSiteDebug64.GetApplication(out IDebugApplication64 ppda)
+    int VSDebug.IActiveScriptSiteDebug64.GetApplication(out VSDebug.IDebugApplication64 ppda)
     {
         DebugWriteMethodeName();
         ppda = m_debugApplication64;
         return S_OK;
     }
 
-    int IActiveScriptSiteDebug64.GetRootApplicationNode(out IDebugApplicationNode ppdanRoot)
+    int VSDebug.IActiveScriptSiteDebug64.GetRootApplicationNode(out VSDebug.IDebugApplicationNode ppdanRoot)
     {
         SUCCESS(m_debugApplication64.GetRootNode(out ppdanRoot));
-        SUCCESS(ppdanRoot.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out var title));
+        SUCCESS(ppdanRoot.GetName(VSDebug.DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out var title));
         DebugWriteMethodeName();
         return 0x8004001;
     }
-    int IActiveScriptSiteDebug32.GetRootApplicationNode(out IDebugApplicationNode ppdanRoot)
+    int VSDebug.IActiveScriptSiteDebug32.GetRootApplicationNode(out VSDebug.IDebugApplicationNode ppdanRoot)
     {
         SUCCESS(m_debugApplication32.GetRootNode(out ppdanRoot));
-        SUCCESS(ppdanRoot.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out var title));
+        SUCCESS(ppdanRoot.GetName(VSDebug.DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out var title));
         DebugWriteMethodeName();
         return 0x8004001;
     }
 
-    public int OnScriptErrorDebug(IActiveScriptErrorDebug pErrorDebug, out int pfEnterDebugger, out int pfCallOnScriptErrorWhenContinuing)
+    public int OnScriptErrorDebug(VSDebug.IActiveScriptErrorDebug pErrorDebug, out int pfEnterDebugger, out int pfCallOnScriptErrorWhenContinuing)
     {
         DebugWriteMethodeName();
         pfEnterDebugger = 0;

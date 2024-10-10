@@ -1,7 +1,6 @@
-using Microsoft.VisualStudio.Debugger.Interop;
 using static Helpers;
 
-public class Callback : IDebugPortNotify2
+public class Callback : VSDebug.IDebugPortNotify2
 {
     volatile int m_refCount;
     readonly int m_hCodeRanEvent;
@@ -17,12 +16,12 @@ public class Callback : IDebugPortNotify2
     }
 
     internal Guid irdapp = new Guid("51973C30-CB0C-11D0-B5C9-00A0244A0E7A");
-    public int AddProgramNode(IDebugProgramNode2 pProgramNode)
+    public int AddProgramNode(VSDebug.IDebugProgramNode2 pProgramNode)
     {
         System.Diagnostics.Debug.WriteLine("AddProgramNode");
         DebugWriteMethodeName();
 
-        var x = pProgramNode as IDebugProviderProgramNode2;
+        var x = pProgramNode as VSDebug.IDebugProviderProgramNode2;
         x.UnmarshalDebuggeeInterface(ref irdapp, out var intPtr);
 
         Program.vbsbase.CauseBreak();
@@ -30,7 +29,7 @@ public class Callback : IDebugPortNotify2
         return 0;
     }
 
-    public int RemoveProgramNode(IDebugProgramNode2 pProgramNode)
+    public int RemoveProgramNode(VSDebug.IDebugProgramNode2 pProgramNode)
     {
         DebugWriteMethodeName();
         throw new NotImplementedException();
@@ -38,8 +37,10 @@ public class Callback : IDebugPortNotify2
 
     [System.Runtime.InteropServices.DllImport("ole32.dll")]
     static extern int CoWaitForMultipleHandles(uint dwFlags, uint dwTimeout, int cHandles, int[] pHandles, out int lpdwindex);
+
     [System.Runtime.InteropServices.DllImport("kernel32.dll")]
     static extern IntPtr CreateEvent(IntPtr lpEventAttributes, bool bManualReset, bool bInitialState, string lpName);
+
     [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
     [System.Runtime.ConstrainedExecution.ReliabilityContract(System.Runtime.ConstrainedExecution.Consistency.WillNotCorruptState, System.Runtime.ConstrainedExecution.Cer.Success)]
     [System.Security.SuppressUnmanagedCodeSecurity()]

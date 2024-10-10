@@ -1,6 +1,4 @@
-﻿using DI = Microsoft.VisualStudio.Debugger.Interop;
-
-
+﻿
 class Program
 {
     internal static VbsDebugAdapter vbsbase;
@@ -49,10 +47,7 @@ class Program
         {
             // this branch works perfect
             if (args.Length == 0)
-                args = new String[] { @"D:\vs_project\VBS-DAP-Debugger\Sample.vbs" };
-
-
-
+                args = new String[] { @"D:\vs_project\VBS-DAP-Debugger\tests\Sample.vbs" };
 
             th = new Thread(new ParameterizedThreadStart(Go));
             th.Start(System.IO.File.ReadAllText(args[0]));
@@ -119,8 +114,6 @@ class Program
         }
 
     }
-
-
     static void resume()
     {
         vbsbase.Resume();

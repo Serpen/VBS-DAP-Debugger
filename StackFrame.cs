@@ -1,18 +1,17 @@
-using Microsoft.VisualStudio.Debugger.Interop;
 using static Helpers;
 
 public class StackFrame
 {
-    internal readonly IDebugStackFrame dsf;
+    internal readonly VSDebug.IDebugStackFrame dsf;
     readonly ulong stackStart;
 
-    IDebugDocument debugDocument;
+    VSDebug.IDebugDocument debugDocument;
 
-    public static IEnumerable<StackFrame> GetFrames(IRemoteDebugApplicationThread prpt, bool firstOnly = false)
+    public static IEnumerable<StackFrame> GetFrames(VSDebug.IRemoteDebugApplicationThread prpt, bool firstOnly = false)
     {
         SUCCESS(prpt.EnumStackFrames(out var enumDebugStackFrames32));
 
-        var enumDebugStackFrames64 = enumDebugStackFrames32 as IEnumDebugStackFrames64;
+        var enumDebugStackFrames64 = enumDebugStackFrames32 as VSDebug.IEnumDebugStackFrames64;
 
         if (enumDebugStackFrames64 is not null)
             return GetFrames64(enumDebugStackFrames64, firstOnly);
@@ -22,10 +21,10 @@ public class StackFrame
             return Array.Empty<StackFrame>();
     }
 
-    static IEnumerable<StackFrame> GetFrames32(IEnumDebugStackFrames enumDebugStackFrames, bool firstOnly = false)
+    static IEnumerable<StackFrame> GetFrames32(VSDebug.IEnumDebugStackFrames enumDebugStackFrames, bool firstOnly = false)
     {
         var retList = new List<StackFrame>();
-        var dsfd = new DebugStackFrameDescriptor[1];
+        var dsfd = new VSDebug.DebugStackFrameDescriptor[1];
 
         SUCCESS(enumDebugStackFrames.Reset());
 
@@ -41,11 +40,11 @@ public class StackFrame
         return retList;
     }
 
-    static IEnumerable<StackFrame> GetFrames64(IEnumDebugStackFrames64 enumDebugStackFrames, bool firstOnly = false)
+    static IEnumerable<StackFrame> GetFrames64(VSDebug.IEnumDebugStackFrames64 enumDebugStackFrames, bool firstOnly = false)
     {
         var retList = new List<StackFrame>();
 
-        var dsfd = new DebugStackFrameDescriptor64[1];
+        var dsfd = new VSDebug.DebugStackFrameDescriptor64[1];
 
         SUCCESS(enumDebugStackFrames.Reset());
 
@@ -61,7 +60,7 @@ public class StackFrame
         return retList;
     }
 
-    public StackFrame(DebugStackFrameDescriptor dsfd)
+    public StackFrame(VSDebug.DebugStackFrameDescriptor dsfd)
     {
         dsf = dsfd.pdsf;
         stackStart = dsfd.dwMin;
@@ -83,7 +82,7 @@ public class StackFrame
          */
         System.Diagnostics.Debug.WriteLine($"{nameof(StackFrame)}.ctor {this}");
     }
-    public StackFrame(DebugStackFrameDescriptor64 dsfd)
+    public StackFrame(VSDebug.DebugStackFrameDescriptor64 dsfd)
     {
         dsf = dsfd.pdsf;
         stackStart = dsfd.dwMin;
@@ -125,10 +124,10 @@ public class StackFrame
     {
         get
         {
-            var debugDocumentText = debugDocument as IDebugDocumentText;
+            var debugDocumentText = debugDocument as VSDebug.IDebugDocumentText;
 
             string name = string.Empty;
-            debugDocumentText?.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_APPNODE, out name);
+            debugDocumentText?.GetName(VSDebug.DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_APPNODE, out name);
             return name;
         }
     }
@@ -137,10 +136,10 @@ public class StackFrame
     {
         get
         {
-            var debugDocumentText = debugDocument as IDebugDocumentText;
+            var debugDocumentText = debugDocument as VSDebug.IDebugDocumentText;
 
             string name = string.Empty;
-            debugDocumentText?.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out name);
+            debugDocumentText?.GetName(VSDebug.DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_TITLE, out name);
             return name;
         }
     }
@@ -149,10 +148,10 @@ public class StackFrame
     {
         get
         {
-            var debugDocumentText = debugDocument as IDebugDocumentText;
+            var debugDocumentText = debugDocument as VSDebug.IDebugDocumentText;
 
             string name = string.Empty;
-            debugDocumentText?.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_FILE_TAIL, out name);
+            debugDocumentText?.GetName(VSDebug.DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_FILE_TAIL, out name);
             return name;
         }
     }
@@ -161,10 +160,10 @@ public class StackFrame
     {
         get
         {
-            var debugDocumentText = debugDocument as IDebugDocumentText;
+            var debugDocumentText = debugDocument as VSDebug.IDebugDocumentText;
 
             string name = string.Empty;
-            debugDocumentText?.GetName(DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_URL, out name);
+            debugDocumentText?.GetName(VSDebug.DOCUMENTNAMETYPE.DOCUMENTNAMETYPE_URL, out name);
             if (String.IsNullOrEmpty(name))
                 return null;
             else
@@ -176,7 +175,7 @@ public class StackFrame
     {
         get
         {
-            var debugDocumentText = debugDocument as IDebugDocumentText;
+            var debugDocumentText = debugDocument as VSDebug.IDebugDocumentText;
 
             string name = string.Empty;
             SUCCESS(debugDocumentText.GetDocumentClassId(out var clsid));
@@ -188,7 +187,7 @@ public class StackFrame
     {
         get
         {
-            var debugDocumentText = debugDocument as IDebugDocumentText;
+            var debugDocumentText = debugDocument as VSDebug.IDebugDocumentText;
 
             string name = string.Empty;
             SUCCESS(debugDocumentText.GetDocumentAttributes(out var docattr));
@@ -209,7 +208,7 @@ public class StackFrame
 
             SUCCESS(debugCodeContext.GetDocumentContext(out var debugDocumentContext));
 
-            var debugDocumentText = debugDocument as IDebugDocumentText;
+            var debugDocumentText = debugDocument as VSDebug.IDebugDocumentText;
 
             if (debugDocumentText is null) throw new Exception("");
 

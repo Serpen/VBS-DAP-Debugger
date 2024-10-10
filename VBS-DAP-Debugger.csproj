@@ -5,15 +5,19 @@
     <TargetFramework>net8.0-windows7.0</TargetFramework>
     <RootNamespace>Serpen.VBSDAPDebugger</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>disable</Nullable>
+    <Nullable>warnings</Nullable>
     <Platforms>x86;x64</Platforms>
     <StartupObject>Program</StartupObject>
+    <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+    <SignAssembly>False</SignAssembly>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Optimize>False</Optimize>
     <DebugType>portable</DebugType>
     <DefineConstants>$(DefineConstants)TRACE;</DefineConstants>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -26,19 +30,34 @@
     <Optimize>False</Optimize>
     <DebugType>portable</DebugType>
     <DefineConstants>$(DefineConstants)TRACE</DefineConstants>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Optimize>True</Optimize>
     <DebugType>portable</DebugType>
     <DefineConstants>$(DefineConstants)TRACE</DefineConstants>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
     <Optimize>True</Optimize>
     <DebugType>portable</DebugType>
     <DefineConstants>$(DefineConstants)TRACE</DefineConstants>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="ActiveDbg\IDebugDocumentText.cs" />
+    <Compile Remove="ActiveDbg\IDispatch.cs" />
+    <Compile Remove="TestClass.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="ActiveDbg\IDebugDocumentText.cs" />
+    <None Include="ActiveDbg\IDispatch.cs" />
+    <None Include="tests\TestClass.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="2.2.332302" /> -->
@@ -49,12 +68,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="attach.vbs">
+    <None Update="tests\attach.vbs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Sample.vbs">
+    <None Update="tests\Sample.vbs">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.Debugger.Interop">
+      <Alias>VSDebug</Alias>
+    </Using>
+    <Using Include="Microsoft.VisualStudio.Shared.VSCodeDebugProtocol">
+      <Alias>DAP</Alias>
+    </Using>
   </ItemGroup>
 
 </Project>

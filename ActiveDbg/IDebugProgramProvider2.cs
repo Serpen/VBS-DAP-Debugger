@@ -1,57 +1,38 @@
-using Microsoft.VisualStudio.Debugger.Interop;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace ActiveDbg
 {
+    [ComImport()]
     [Guid("1959530A-8E53-4E09-AD11-1B7334811CAD")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IDebugProgramProvider2My64 // Anywhere deep within may be a field thats responsible for the memory access exception, because 32 bit runs!
+    internal interface IDebugProgramProvider2
     {
+        [MethodImpl(MethodImplOptions.PreserveSig)]
         int GetProviderProcessData(
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.PROVIDER_FLAGS")] enum_PROVIDER_FLAGS Flags,
-            IDebugDefaultPort2 pPort,
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.AD_PROCESS_ID")] AD_PROCESS_ID ProcessId,
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.CONST_GUID_ARRAY")] CONST_GUID_ARRAY EngineFilter,
-            out PROVIDER_PROCESS_DATAMy pProcess);
-            
+            VSDebug.enum_PROVIDER_FLAGS Flags,
+            VSDebug.IDebugDefaultPort2 pPort,
+            VSDebug.AD_PROCESS_ID ProcessId,
+            VSDebug.CONST_GUID_ARRAY EngineFilter,
+            out PROVIDER_PROCESS_DATA pProcess);
+
+        [MethodImpl(MethodImplOptions.PreserveSig)]
         int GetProviderProgramNode(
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.PROVIDER_FLAGS")] uint Flags, 
-            IDebugDefaultPort2 pPort, 
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.AD_PROCESS_ID")] AD_PROCESS_ID ProcessId, 
+            uint Flags,
+            VSDebug.IDebugDefaultPort2 pPort, 
+            VSDebug.AD_PROCESS_ID ProcessId, 
             ref Guid guidEngine, 
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.UINT64")] ulong programId, 
-            out IDebugProgramNode2 ppProgramNode);
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.PreserveSig)]
-        int WatchForProviderEvents(
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.PROVIDER_FLAGS")] enum_PROVIDER_FLAGS Flags, 
-            IDebugDefaultPort2 pPort, 
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.AD_PROCESS_ID")] AD_PROCESS_ID ProcessId,
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.CONST_GUID_ARRAY")] CONST_GUID_ARRAY EngineFilter, 
-            ref Guid guidLaunchingEngine, 
-            IDebugPortNotify2 pEventCallback);
-        int SetLocale(ushort wLangID);
-    }
+            ulong programId, 
+            out VSDebug.IDebugProgramNode2 ppProgramNode);
 
-    [Guid("1959530A-8E53-4E09-AD11-1B7334811CAD")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IDebugProgramProvider2My32
-    {
-        int GetProviderProcessData(
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.PROVIDER_FLAGS")] enum_PROVIDER_FLAGS Flags,
-            IDebugDefaultPort2 pPort,
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.AD_PROCESS_ID")] AD_PROCESS_ID ProcessId,
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.CONST_GUID_ARRAY")] CONST_GUID_ARRAY EngineFilter,
-            out PROVIDER_PROCESS_DATAMy pProcess);
-
-        int GetProviderProgramNode([ComAliasName("Microsoft.VisualStudio.Debugger.Interop.PROVIDER_FLAGS")] uint Flags, IDebugDefaultPort2 pPort, [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.AD_PROCESS_ID")] AD_PROCESS_ID ProcessId, ref Guid guidEngine, [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.UINT64")] ulong programId, out IDebugProgramNode2 ppProgramNode);
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.PreserveSig)]
+        [MethodImpl(MethodImplOptions.PreserveSig)]
         int WatchForProviderEvents(
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.PROVIDER_FLAGS")] enum_PROVIDER_FLAGS Flags,
-            IDebugDefaultPort2 pPort,
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.AD_PROCESS_ID")] AD_PROCESS_ID ProcessId,
-            [ComAliasName("Microsoft.VisualStudio.Debugger.Interop.CONST_GUID_ARRAY")] CONST_GUID_ARRAY EngineFilter,
+            VSDebug.enum_PROVIDER_FLAGS Flags,
+            VSDebug.IDebugDefaultPort2 pPort, 
+            VSDebug.AD_PROCESS_ID ProcessId,
+            VSDebug.CONST_GUID_ARRAY EngineFilter, 
             ref Guid guidLaunchingEngine,
-            IDebugPortNotify2 pEventCallback);
+            VSDebug.IDebugPortNotify2 pEventCallback);
         int SetLocale(ushort wLangID);
     }
 }

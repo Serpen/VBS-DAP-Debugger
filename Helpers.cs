@@ -18,6 +18,24 @@ internal static class Helpers
         return hresult;
     }
 
+    [System.Diagnostics.DebuggerStepThrough()]
+    internal static int SUCCESS(int? hresult, string name = "", bool throwException = false, params int[] ignores)
+    {
+        if (hresult.HasValue && hresult.Value != 0)
+        {
+            var st = new System.Diagnostics.StackTrace(true);
+            var frame = st.GetFrame(1);
+            var file = frame?.GetFileName();
+            var line = frame?.GetFileLineNumber();
+            var ex = new System.ComponentModel.Win32Exception(hresult.Value);
+            if (throwException)
+                throw ex;
+            else if (!ignores.Contains(hresult.Value))
+                System.Console.Error.WriteLine($"{name} {hresult} {hresult.Value.ToString("x")} {ex.Message} {file}:{line}");
+        }
+        return hresult ?? 0;
+    }
+
     internal static Guid GetInterfaceGuid(Type Interface)
     => new Guid((Interface.GetCustomAttributes(typeof(System.Runtime.InteropServices.GuidAttribute), false)
             .First() as System.Runtime.InteropServices.GuidAttribute).Value);
@@ -26,10 +44,10 @@ internal static class Helpers
     {
         var stack = new System.Diagnostics.StackTrace(true);
         var sframe = stack.GetFrame(1);
-        var smethod = sframe.GetMethod();
+        var smethod = sframe?.GetMethod();
         System.Diagnostics.Debug.WriteLine(
-                   smethod.DeclaringType.Name + "." +
-                   smethod.Name +
+                   smethod?.DeclaringType?.Name + "." +
+                   smethod?.Name +
                    " (" + String.Join(" ", args) + ")");
     }
     public const int S_OK = 0;

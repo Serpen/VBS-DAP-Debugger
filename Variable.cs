@@ -1,29 +1,27 @@
-using ActiveDbg;
-using Microsoft.VisualStudio.Debugger.Interop;
 using static Helpers;
 
 public class Variable
 {
 
     const uint Radix = 10;
-    const DebugPopertyInfoFlags PROP_INFO_STANDARD =
-        DebugPopertyInfoFlags.PROP_INFO_NAME |
-        DebugPopertyInfoFlags.PROP_INFO_TYPE |
-        DebugPopertyInfoFlags.PROP_INFO_VALUE |
-        DebugPopertyInfoFlags.PROP_INFO_ATTRIBUTES;
+    const ActiveDbg.DebugPopertyInfoFlags PROP_INFO_STANDARD =
+        ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_NAME |
+        ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_TYPE |
+        ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_VALUE |
+        ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_ATTRIBUTES;
 
-    readonly DebugPropertyInfo64 propertyInfo64;
-    readonly DebugPropertyInfo propertyInfo;
-    static bool Is64 = IntPtr.Size == 8 ? true : false; // readonly -> static
+    readonly ActiveDbg.DebugPropertyInfo64 propertyInfo64;
+    readonly VSDebug.DebugPropertyInfo propertyInfo;
+    static readonly bool Is64 = IntPtr.Size == 8 ? true : false; // readonly -> static
 
-    public static IEnumerable<Variable> getVariables(IRemoteDebugApplicationThread prpt)
+    public static IEnumerable<Variable> getVariables(VSDebug.IRemoteDebugApplicationThread prpt)
     {
         var sf1 = StackFrame.GetFrames(prpt, true).FirstOrDefault();
         if (sf1 is not null)
         {
             SUCCESS(sf1.dsf.GetDebugProperty(out var debugProperty));
 
-            SUCCESS(debugProperty.EnumMembers((uint)(PROP_INFO_STANDARD | DebugPopertyInfoFlags.PROP_INFO_DEBUGPROP), Radix, EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32));
+            SUCCESS(debugProperty.EnumMembers((uint)(PROP_INFO_STANDARD | ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_DEBUGPROP), Radix, ActiveDbg.EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32));
 
             // doesn't works, x64 is still true
             var enumDebugPropertyInfo64 = enumDebugPropertyInfo32 as ActiveDbg.IEnumDebugPropertyInfo64;
@@ -36,7 +34,7 @@ public class Variable
         return Array.Empty<Variable>();
     }
 
-    static IEnumerable<Variable> getVariables32(IEnumDebugPropertyInfo edpi32)
+    static IEnumerable<Variable> getVariables32(VSDebug.IEnumDebugPropertyInfo edpi32)
     {
         var retList = new List<Variable>();
 
@@ -44,7 +42,7 @@ public class Variable
 
         edpi32.GetCount(out var count);
 
-        var dpi = new DebugPropertyInfo[count];
+        var dpi = new VSDebug.DebugPropertyInfo[count];
 
         uint fetched = 0;
         do
@@ -82,16 +80,16 @@ public class Variable
         return retList;
     }
 
-    internal Variable(DebugPropertyInfo64 propertyInfo64)
+    internal Variable(ActiveDbg.DebugPropertyInfo64 propertyInfo64)
     {
         this.propertyInfo64 = propertyInfo64;
-        Is64 = true;
+        //Is64 = true;
     }
 
-    internal Variable(DebugPropertyInfo propertyInfo)
+    internal Variable(VSDebug.DebugPropertyInfo propertyInfo)
     {
         this.propertyInfo = propertyInfo;
-        Is64 = false;
+        //Is64 = false;
     }
 
     private static bool isMethodDirty(dynamic dpi) {
@@ -111,7 +109,7 @@ public class Variable
         {
             if (propertyInfo64.m_pDebugProp is not null)
             {
-                SUCCESS(propertyInfo64.m_pDebugProp.EnumMembers((uint)(PROP_INFO_STANDARD | ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_DEBUGPROP), Radix, EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32), ignores: -2147467259);
+                SUCCESS(propertyInfo64.m_pDebugProp.EnumMembers((uint)(PROP_INFO_STANDARD | ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_DEBUGPROP), Radix, ActiveDbg.EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32), ignores: -2147467259);
 
                 var enumDebugPropertyInfo64 = enumDebugPropertyInfo32 as ActiveDbg.IEnumDebugPropertyInfo64;
 
@@ -122,7 +120,8 @@ public class Variable
 
             } else if (propertyInfo.m_pDebugProp is not null)
             {
-                SUCCESS(propertyInfo.m_pDebugProp.EnumMembers((uint)(PROP_INFO_STANDARD | ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_DEBUGPROP), Radix, EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32), ignores: -2147467259);
+                SUCCESS(propertyInfo.m_pDebugProp.EnumMembers((uint)(PROP_INFO_STANDARD | ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_DEBUGPROP), Radix, ActiveDbg.EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32), ignores: -2147467259);
+
 
                 if (enumDebugPropertyInfo32 is not null)
                     return getVariables32(enumDebugPropertyInfo32);
