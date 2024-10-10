@@ -1,7 +1,7 @@
 Option Explicit
 dim fso
+msgbox "vor fso"
 set fso = CreateObject("Scripting.FileSystemObject")
+msgbox "vor stop"
 stop
-msgbox 1
-msgbox 2
-msgbox 3
+msgbox "nach stop"

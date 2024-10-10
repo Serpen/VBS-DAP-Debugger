@@ -2,12 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <RootNamespace>Serpen.VBSDAPDebugger</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
     <Platforms>x86;x64</Platforms>
-    <PlatformTarget>x86</PlatformTarget>
     <StartupObject>Program</StartupObject>
   </PropertyGroup>
 

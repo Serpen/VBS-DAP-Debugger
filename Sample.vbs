@@ -1,7 +1,7 @@
 'Option Explicit
 
 sub my1()
-    
+    'stop
     dim obj1 : set obj1 = new MYClass
     'obj1.m_sub
 
@@ -18,16 +18,22 @@ sub my1()
     boo = CBool(true)
     byt = CByte(55)
     cur = CCur(12.789)
-    dat = CDate(now)
-    dbl = CDbl(18)
+    dat = CDate(#11/11/2022 10:01:17 PM#)
+    dbl = CDbl(Sqr(18.4))
     lng = CLng(12)
     inte = CInt(12)
-    sng = CSng(18)
+    sng = CSng(Sqr(18.4))
     str = CStr("hallo")
+
+    dim i : i = 0
+    Do
+        i = i+1
+    Loop While i < 1000
 
     Debug.Write "debugwrite"
 
-    Call MsgBox(cur, vbYesNoCancel)
+    'stop
+    'Call MsgBox(cur, vbYesNoCancel)
     
     set fso = CreateObject("Scripting.FileSystemObject")
     Set dic = CreateObject("Scripting.Dictionary")
@@ -40,14 +46,15 @@ sub my1()
     Ok = vbOK
 
     f = false
-    t = true
+    t = True
 
     stop
-
-
-
-
     
+    const myval = "const"
+
+    msgbox 1
+
+
     
 end sub
 
@@ -64,6 +71,19 @@ class MyClass
     End sub
 
     function m_function() : End function
+
+    Public Property Get PropertyName
+        PropertyName = m_private
+    End Property
+    Public Property Let PropertyName(Value)
+        m_private = Value
+    End Property
+    
+    Private Sub Class_Initialize()
+        m_private = 66
+        set m_public = new MyClass
+    End Sub
+
 end class
 
 caller

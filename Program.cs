@@ -15,10 +15,18 @@ class Program
     {
         // throw new ApplicationException("myappx");
         System.Diagnostics.Debug.WriteLine("start program1");
+        if (IntPtr.Size == 4)
+        {
+            System.Diagnostics.Debug.WriteLine("running in 32bit");
+        } else
+        {
+            System.Diagnostics.Debug.WriteLine("running in 64bit");
+        }
         vbsbase = new VbsDebugAdapter();
 
         if (args.Length == 1 && args[0] == "-dap")
         {
+            //System.Diagnostics.Debugger.Launch();
             Program.isDAP = true;
             vbsbase.Protocol.Run();
         }
@@ -39,8 +47,9 @@ class Program
         }
         else
         {
+            // this branch works perfect
             if (args.Length == 0)
-                args = new String[] { @"D:\Temp\vbscript-files\_allSyntax.vbs" };
+                args = new String[] { @"D:\vs_project\VBS-DAP-Debugger\Sample.vbs" };
 
 
 

@@ -14,7 +14,7 @@ public class Variable
 
     readonly DebugPropertyInfo64 propertyInfo64;
     readonly DebugPropertyInfo propertyInfo;
-    static bool Is64; // readonly -> static
+    static bool Is64 = IntPtr.Size == 8 ? true : false; // readonly -> static
 
     public static IEnumerable<Variable> getVariables(IRemoteDebugApplicationThread prpt)
     {
@@ -120,13 +120,20 @@ public class Variable
                 else if (enumDebugPropertyInfo32 is not null)
                     return getVariables32(enumDebugPropertyInfo32);
 
+            } else if (propertyInfo.m_pDebugProp is not null)
+            {
+                SUCCESS(propertyInfo.m_pDebugProp.EnumMembers((uint)(PROP_INFO_STANDARD | ActiveDbg.DebugPopertyInfoFlags.PROP_INFO_DEBUGPROP), Radix, EnumPropertyTypes.IDebugPropertyEnumType_All, out var enumDebugPropertyInfo32), ignores: -2147467259);
+
+                if (enumDebugPropertyInfo32 is not null)
+                    return getVariables32(enumDebugPropertyInfo32);
+
             }
             return Array.Empty<Variable>();
         }
     }
     public override string ToString()
     {
-        return $"{Name}{(!String.IsNullOrEmpty(Fullname) ? " [" + Fullname + "]" : "")} As {Type} = {Value} ' {Attributes}";
+        return $"{Name}{(!String.IsNullOrEmpty(Fullname) ? " [" + Fullname + "]" : "")} As {Type} = {Value} ' {Attributes} {((int)Attributes).ToString("x")}";
     }
 
 }

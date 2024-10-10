@@ -222,6 +222,26 @@ public class VbsDebugAdapter : DAP.DebugAdapterBase, IDisposable
                 SUCCESS(result);
 
                 if (result == 0 && provdata.ProgramNodes.dwCount > 0)
+                {
+                    result = MSProgramProvider2.GetProviderProcessData(enum_PROVIDER_FLAGS.PFLAG_GET_PROGRAM_NODES | enum_PROVIDER_FLAGS.PFLAG_DEBUGGEE | enum_PROVIDER_FLAGS.PFLAG_ATTACHED_TO_DEBUGGEE , null, adprocid, ScriptEngineFilter, out var provdata2);
+
+                    var dpn2Guid = GetInterfaceGuid(typeof(IDebugProgramNode2));
+                    var rdaGuid = GetInterfaceGuid(typeof(IRemoteDebugApplication));
+
+                    var ptrptr = Marshal.ReadIntPtr(provdata2.ProgramNodes.Members);
+
+                    Marshal.QueryInterface(ptrptr, ref dpn2Guid, out var ptr1);
+
+                    var dppn2 = Marshal.GetObjectForIUnknown(ptr1) as IDebugProviderProgramNode2;
+
+                    dppn2.UnmarshalDebuggeeInterface(ref rdaGuid, out var rdaPtr);
+
+                    var rda = Marshal.GetObjectForIUnknown(rdaPtr) as IRemoteDebugApplication;
+
+                    System.Diagnostics.Debug.WriteLine("process {0} {1} {3}", proc, proc.Id, rda.GetName(out var rdaname), rdaname);
+
+
+                }
                     outlist.Add(proc);
             }
             catch { }
@@ -353,6 +373,7 @@ public class VbsDebugAdapter : DAP.DebugAdapterBase, IDisposable
             SupportsConfigurationDoneRequest = true,
             SupportsTerminateRequest = true,
             SupportSuspendDebuggee = true,
+     
             SupportsDebuggerProperties = true,
             SupportsFunctionBreakpoints = true,
             SupportsInstructionBreakpoints = true,
@@ -472,10 +493,13 @@ public class VbsDebugAdapter : DAP.DebugAdapterBase, IDisposable
         {
             DebugWriteMethodeName(args.VariablesReference);
             var ret = new VariablesResponse();
-            int i = dic.Count + 2;
+            int i = dic.Count+2;
             IEnumerable<Variable> List;
-            if (args.VariablesReference > 1)
+            if (args.VariablesReference > 1) {
+                ret.Variables.Add(new DAP.Messages.Variable("sub", "subval", 0));
+                return ret;
                 List = dic[args.VariablesReference].Members;
+            }
             else
                 List = Variable.getVariables(this.DebugThread);
 
@@ -494,8 +518,11 @@ public class VbsDebugAdapter : DAP.DebugAdapterBase, IDisposable
 
     protected override ScopesResponse HandleScopesRequest(ScopesArguments args)
     {
-        DebugWriteMethodeName();
-        return new ScopesResponse(new List<Scope>() { new Scope("Globals", 1, false) });
+        lock (syncobject)
+        {
+            DebugWriteMethodeName();
+            return new ScopesResponse(new List<Scope>() { new Scope("Globals", 1, false) });
+        }
     }
 
     protected override ContinueResponse HandleContinueRequest(ContinueArguments args)

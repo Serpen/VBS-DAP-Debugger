@@ -12,6 +12,6 @@ namespace ActiveDbg
         public uint dwCount;
 
         public /*IDebugProgramNode2*/ IntPtr Members; // Pointer of Pointer **
-        
+
     }
 }

@@ -32,7 +32,7 @@ public class StackFrame
         uint fetched = 0;
         do
         {
-            SUCCESS(enumDebugStackFrames.Next(1, dsfd, out fetched));
+            SUCCESS(enumDebugStackFrames.Next(1, dsfd, out fetched), ignores: 1);
 
             if (fetched == 1)
                 retList.Add(new StackFrame(dsfd[0]));
