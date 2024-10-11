@@ -30,8 +30,8 @@ class Program
         }
         else if (args.Length == 1 && args[0] == "-wait")
         {
-            var pi = new System.Diagnostics.ProcessStartInfo("C:\\windows\\system32\\cscript.exe", "//D attach.vbs"); // { WorkingDirectory = "D:\\vs_proj\\VBS-DAP-Debugger\\" };
-            vbsbase.Wait(pi);
+            var pi = new System.Diagnostics.ProcessStartInfo(@"D:\Austausch\Projekt1vbs.exe", "//D //X tests\\attach.vbs"); // { WorkingDirectory = "D:\\vs_proj\\VBS-DAP-Debugger\\" };
+            vbsbase.Wait(pi); // "C:\windows\system32\cscript.exe"
         }
         else if (args.Length == 1 && args[0] == "-attach")
         {

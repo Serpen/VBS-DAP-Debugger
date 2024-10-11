@@ -1,3 +1,6 @@
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.OLE.Interop;
+using System.Runtime.InteropServices;
 using static Helpers;
 
 public class Callback : VSDebug.IDebugPortNotify2
@@ -21,8 +24,20 @@ public class Callback : VSDebug.IDebugPortNotify2
         System.Diagnostics.Debug.WriteLine("AddProgramNode");
         DebugWriteMethodeName();
 
-        var x = pProgramNode as VSDebug.IDebugProviderProgramNode2;
-        x.UnmarshalDebuggeeInterface(ref irdapp, out var intPtr);
+        var dppn2 = pProgramNode as VSDebug.IDebugProviderProgramNode2;
+        dppn2.UnmarshalDebuggeeInterface(ref irdapp, out var rdaPtr);
+
+        var rda = Marshal.GetObjectForIUnknown(rdaPtr) as VSDebug.IRemoteDebugApplication;
+
+
+        SUCCESS(rda.ConnectDebugger(Program.vbsbase.applicationDebugger));
+
+
+
+        // How to complete the launch:
+        // 1. QI pProgramNode for IDebugProviderProgramNode2
+        // 2. Call UnmarshalDebuggeeInterface passing in __uuidof().
+        // 3. Call IRemoteDebugApplication::ConnectDebugger as before
 
         Program.vbsbase.CauseBreak();
 

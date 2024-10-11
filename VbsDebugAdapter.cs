@@ -200,7 +200,7 @@ public class VbsDebugAdapter : DAP.DebugAdapterBase, IDisposable
     {
         var outlist = new List<System.Diagnostics.Process>();
 
-        foreach (var proc in System.Diagnostics.Process.GetProcesses().Where(p => p.ProcessName.Contains("script", StringComparison.CurrentCultureIgnoreCase)))
+        foreach (var proc in System.Diagnostics.Process.GetProcesses().Where(p => p.ProcessName.Contains("Projekt1vbs", StringComparison.CurrentCultureIgnoreCase)))
         //foreach (var proc in System.Diagnostics.Process.GetProcessesByName("cscript"))
         {
             if (proc.Id == Process.GetCurrentProcess().Id)
@@ -235,9 +235,9 @@ public class VbsDebugAdapter : DAP.DebugAdapterBase, IDisposable
 
                     System.Diagnostics.Debug.WriteLine("process {0} {1} {3}", proc, proc.Id, rda.GetName(out var rdaname), rdaname);
 
-
-                }
                     outlist.Add(proc);
+                }
+                    
             }
             catch { }
         }
